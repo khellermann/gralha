@@ -62,7 +62,7 @@ function Index() {
         <div className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
           <div className="text-center">
             <p className="text-[10px] sm:text-xs uppercase tracking-[0.5em] text-muted-foreground">
-              Fundado em Londrina · Paraná
+              Fundado em Siqueira Campos · Paraná
             </p>
             <h2 className="mt-3 text-serif text-5xl sm:text-7xl font-black text-ink">A Gralha</h2>
             <div className="mx-auto mt-3 max-w-md rule-double py-1">

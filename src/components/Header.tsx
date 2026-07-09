@@ -1,13 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { Feather } from "lucide-react";
 
 export function Header() {
   return (
     <header className="border-b border-ink/15 bg-paper/85 backdrop-blur sticky top-0 z-40">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:py-4">
         <Link to="/" className="flex items-center gap-3 group">
-          <span className="grid h-11 w-11 place-items-center rounded-full bg-gralha-gradient text-primary-foreground shadow-md">
-            <Feather className="h-5 w-5" />
+          <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-paper shadow-md ring-1 ring-ink/10">
+            <img src="/logo.png" alt="A Gralha" className="h-full w-full object-contain p-0.5" />
           </span>
           <div className="leading-tight">
             <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
