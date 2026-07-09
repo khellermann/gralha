@@ -11,6 +11,13 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 
+const siteUrl =
+  (import.meta.env.VITE_SITE_URL as string | undefined) ?? "https://gralha.vercel.app";
+const siteTitle = "A Gralha - Jornal Cultural";
+const siteDescription =
+  "Jornal literário e artístico A Gralha - edições completas, colunas e vozes da cultura brasileira.";
+const socialImageUrl = `${siteUrl.replace(/\/$/, "")}/social-preview.png`;
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -75,27 +82,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "A Gralha - Jornal Cultural" },
-      {
-        name: "description",
-        content:
-          "Jornal literário e artístico A Gralha - edições completas, colunas e vozes da cultura brasileira.",
-      },
+      { title: siteTitle },
+      { name: "description", content: siteDescription },
       { name: "author", content: "Editora A Gralha" },
-      { property: "og:title", content: "A Gralha - Jornal Cultural" },
-      {
-        property: "og:description",
-        content:
-          "Jornal literário e artístico A Gralha - edições completas, colunas e vozes da cultura brasileira.",
-      },
+      { property: "og:site_name", content: "A Gralha" },
+      { property: "og:title", content: siteTitle },
+      { property: "og:description", content: siteDescription },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: siteUrl },
+      { property: "og:image", content: socialImageUrl },
+      { property: "og:image:secure_url", content: socialImageUrl },
+      { property: "og:image:type", content: "image/png" },
+      { property: "og:image:width", content: "512" },
+      { property: "og:image:height", content: "512" },
+      { property: "og:image:alt", content: "Logo do jornal cultural A Gralha" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "A Gralha - Jornal Cultural" },
-      {
-        name: "twitter:description",
-        content:
-          "Jornal literário e artístico A Gralha - edições completas, colunas e vozes da cultura brasileira.",
-      },
+      { name: "twitter:title", content: siteTitle },
+      { name: "twitter:description", content: siteDescription },
+      { name: "twitter:image", content: socialImageUrl },
+      { name: "twitter:image:alt", content: "Logo do jornal cultural A Gralha" },
     ],
     links: [
       {
@@ -103,6 +108,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "apple-touch-icon", href: "/social-preview.png" },
+      { rel: "canonical", href: siteUrl },
     ],
   }),
   shellComponent: RootShell,
