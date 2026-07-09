@@ -17,6 +17,8 @@ export interface Sponsor {
   id: string;
   name: string;
   url: string;
+  whatsapp: string;
+  address: string;
   imagePath: string;
   active: boolean;
   createdAt: string;
@@ -39,6 +41,8 @@ type SponsorRow = {
   id: string;
   name: string;
   url: string | null;
+  whatsapp: string | null;
+  address: string | null;
   image_path: string;
   active: boolean;
   created_at: string;
@@ -64,6 +68,8 @@ function mapSponsor(row: SponsorRow): Sponsor {
     id: row.id,
     name: row.name,
     url: row.url ?? "",
+    whatsapp: row.whatsapp ?? "",
+    address: row.address ?? "",
     imagePath: row.image_path,
     active: row.active,
     createdAt: row.created_at,
@@ -150,6 +156,8 @@ export async function saveSponsor(input: {
   id: string;
   name: string;
   url: string;
+  whatsapp: string;
+  address: string;
   imagePath: string;
   active: boolean;
 }) {
@@ -157,6 +165,8 @@ export async function saveSponsor(input: {
     id: input.id,
     name: input.name,
     url: input.url || null,
+    whatsapp: input.whatsapp || null,
+    address: input.address || null,
     image_path: input.imagePath,
     active: input.active,
   });
@@ -167,7 +177,13 @@ export async function saveSponsor(input: {
 export async function updateSponsor(sponsor: Sponsor) {
   const { error } = await supabase
     .from("sponsors")
-    .update({ active: sponsor.active, name: sponsor.name, url: sponsor.url || null })
+    .update({
+      active: sponsor.active,
+      name: sponsor.name,
+      url: sponsor.url || null,
+      whatsapp: sponsor.whatsapp || null,
+      address: sponsor.address || null,
+    })
     .eq("id", sponsor.id);
 
   if (error) throw error;

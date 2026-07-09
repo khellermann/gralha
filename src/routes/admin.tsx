@@ -335,6 +335,8 @@ function SponsorsSection({
 }) {
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [address, setAddress] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -349,11 +351,15 @@ function SponsorsSection({
         id,
         name: name.trim(),
         url: url.trim(),
+        whatsapp: whatsapp.trim(),
+        address: address.trim(),
         imagePath,
         active: true,
       });
       setName("");
       setUrl("");
+      setWhatsapp("");
+      setAddress("");
       setFile(null);
       const input = document.getElementById("sponsor-file") as HTMLInputElement | null;
       if (input) input.value = "";
@@ -392,6 +398,22 @@ function SponsorsSection({
               placeholder="https://..."
               value={url}
               onChange={(e) => setUrl(e.target.value)}
+              className="w-full rounded-md border border-input bg-paper px-3 py-2 text-sm"
+            />
+          </Field>
+          <Field label="WhatsApp">
+            <input
+              type="tel"
+              placeholder="(48) 99999-9999"
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(e.target.value)}
+              className="w-full rounded-md border border-input bg-paper px-3 py-2 text-sm"
+            />
+          </Field>
+          <Field label="EndereÃ§o">
+            <input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
               className="w-full rounded-md border border-input bg-paper px-3 py-2 text-sm"
             />
           </Field>
@@ -437,6 +459,12 @@ function SponsorsSection({
                 >
                   {s.url} <ExternalLink className="h-3 w-3" />
                 </a>
+              )}
+              {s.whatsapp && (
+                <p className="text-xs text-muted-foreground truncate">WhatsApp: {s.whatsapp}</p>
+              )}
+              {s.address && (
+                <p className="text-xs text-muted-foreground truncate">EndereÃ§o: {s.address}</p>
               )}
             </div>
             <label className="flex items-center gap-1.5 text-xs cursor-pointer">

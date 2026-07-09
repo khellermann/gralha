@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { getSponsorImageUrl, getSponsors, type Sponsor } from "@/lib/store";
+import "sweetalert2/dist/sweetalert2.min.css";
 
 interface Entry {
   sponsor: Sponsor;
@@ -49,23 +50,23 @@ export function SponsorCarousel() {
   return (
     <div className="relative overflow-hidden rounded-xl border border-ink/15 bg-card paper-shadow">
       <AnimatePresence mode="wait">
-        <motion.a
+        <motion.button
           key={current.sponsor.id}
-          href={current.sponsor.url || "#"}
-          target="_blank"
-          rel="noreferrer"
+          type="button"
+          onClick={() => void openSponsorModal(current)}
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -30 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="block"
+          className="block w-full cursor-pointer text-left"
+          aria-label={`Ver informaÃ§Ãµes do patrocinador ${current.sponsor.name}`}
         >
           <img
             src={current.url}
             alt={current.sponsor.name}
             className="h-40 sm:h-56 w-full object-contain bg-paper p-4"
           />
-        </motion.a>
+        </motion.button>
       </AnimatePresence>
       <div className="flex justify-center gap-1.5 py-3 bg-card">
         {entries.map((e, i) => (
@@ -79,4 +80,58 @@ export function SponsorCarousel() {
       </div>
     </div>
   );
+}
+
+async function openSponsorModal(entry: Entry) {
+  const { default: Swal } = await import("sweetalert2");
+  const whatsappHref = getWhatsappUrl(entry.sponsor.whatsapp);
+  const address = entry.sponsor.address.trim();
+  const whatsapp = entry.sponsor.whatsapp.trim();
+
+  const result = await Swal.fire({
+    title: escapeHtml(entry.sponsor.name),
+    html: `
+      <div class="space-y-4 text-left">
+        <img
+          src="${escapeAttribute(entry.url)}"
+          alt="${escapeAttribute(entry.sponsor.name)}"
+          class="mx-auto max-h-64 w-full rounded-lg object-contain bg-[#f7f0df] p-3"
+        />
+        <div class="space-y-2 text-sm text-[#2f2a22]">
+          ${whatsapp ? `<p><strong>WhatsApp:</strong> ${escapeHtml(whatsapp)}</p>` : ""}
+          ${address ? `<p><strong>EndereÃ§o:</strong> ${escapeHtml(address)}</p>` : ""}
+        </div>
+      </div>
+    `,
+    confirmButtonText: whatsappHref ? "Conversar no WhatsApp" : "Fechar",
+    showCancelButton: Boolean(whatsappHref),
+    cancelButtonText: "Fechar",
+    confirmButtonColor: "#1f7a4d",
+    cancelButtonColor: "#6b6257",
+    width: "min(92vw, 620px)",
+  });
+
+  if (result.isConfirmed && whatsappHref) {
+    window.open(whatsappHref, "_blank", "noopener,noreferrer");
+  }
+}
+
+function getWhatsappUrl(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+  const normalized = digits.startsWith("55") ? digits : `55${digits}`;
+  return `https://wa.me/${normalized}`;
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function escapeAttribute(value: string) {
+  return escapeHtml(value).replace(/`/g, "&#096;");
 }
