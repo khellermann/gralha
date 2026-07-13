@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { getSponsorImageUrl, getSponsors, type Sponsor } from "@/lib/store";
 import "sweetalert2/dist/sweetalert2.min.css";
 
@@ -10,7 +9,6 @@ interface Entry {
 
 export function SponsorCarousel() {
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [index, setIndex] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -31,12 +29,6 @@ export function SponsorCarousel() {
     };
   }, []);
 
-  useEffect(() => {
-    if (entries.length < 2) return;
-    const t = setInterval(() => setIndex((i) => (i + 1) % entries.length), 4200);
-    return () => clearInterval(t);
-  }, [entries.length]);
-
   if (entries.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-ink/25 bg-card/60 p-8 text-center text-sm text-muted-foreground">
@@ -45,39 +37,29 @@ export function SponsorCarousel() {
     );
   }
 
-  const current = entries[index];
-
   return (
-    <div className="relative overflow-hidden rounded-xl border border-ink/15 bg-card paper-shadow">
-      <AnimatePresence mode="wait">
-        <motion.button
-          key={current.sponsor.id}
+    <div
+      className={`grid gap-3 sm:gap-4 ${
+        entries.length === 1
+          ? "mx-auto max-w-sm grid-cols-1"
+          : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+      }`}
+    >
+      {entries.map((entry) => (
+        <button
+          key={entry.sponsor.id}
           type="button"
-          onClick={() => void openSponsorModal(current)}
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -30 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="block w-full cursor-pointer text-left"
-          aria-label={`Ver informaÃ§Ãµes do patrocinador ${current.sponsor.name}`}
+          onClick={() => void openSponsorModal(entry)}
+          className="group flex aspect-[2/1] w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-ink/15 bg-paper p-4 paper-shadow transition hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring"
+          aria-label={`Ver informações do patrocinador ${entry.sponsor.name}`}
         >
           <img
-            src={current.url}
-            alt={current.sponsor.name}
-            className="h-40 sm:h-56 w-full object-contain bg-paper p-4"
+            src={entry.url}
+            alt={entry.sponsor.name}
+            className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.03]"
           />
-        </motion.button>
-      </AnimatePresence>
-      <div className="flex justify-center gap-1.5 py-3 bg-card">
-        {entries.map((e, i) => (
-          <button
-            key={e.sponsor.id}
-            onClick={() => setIndex(i)}
-            aria-label={`Ir para patrocinador ${i + 1}`}
-            className={`h-1.5 rounded-full transition-all ${i === index ? "w-6 bg-primary" : "w-1.5 bg-ink/25"}`}
-          />
-        ))}
-      </div>
+        </button>
+      ))}
     </div>
   );
 }
@@ -99,7 +81,7 @@ async function openSponsorModal(entry: Entry) {
         />
         <div class="space-y-2 text-sm text-[#2f2a22]">
           ${whatsapp ? `<p><strong>WhatsApp:</strong> ${escapeHtml(whatsapp)}</p>` : ""}
-          ${address ? `<p><strong>EndereÃ§o:</strong> ${escapeHtml(address)}</p>` : ""}
+          ${address ? `<p><strong>Endereço:</strong> ${escapeHtml(address)}</p>` : ""}
         </div>
       </div>
     `,

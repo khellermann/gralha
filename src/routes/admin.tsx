@@ -427,6 +427,10 @@ function SponsorsSection({
             className="w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-paper file:cursor-pointer"
             required
           />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Use uma imagem horizontal, de preferência 1200x600px, em PNG ou JPG. O site
+            exibirá todos os logos no mesmo tamanho visual, sem cortar a imagem.
+          </p>
         </Field>
         <button
           type="submit"
