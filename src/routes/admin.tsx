@@ -39,6 +39,7 @@ import {
   type Edition,
   type Sponsor,
 } from "@/lib/store";
+import "sweetalert2/dist/sweetalert2.min.css";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -471,7 +472,7 @@ function EditionsSection({
       await onChange();
     } catch (error) {
       console.error(error);
-      alert("Não foi possível publicar a edição.");
+      void showError("Não foi possível publicar a edição.");
     } finally {
       setBusy(false);
       setProgress("");
@@ -493,34 +494,63 @@ function EditionsSection({
       await onChange();
     } catch (error) {
       console.error(error);
-      alert("Não foi possível atualizar a edição.");
+      void showError("Não foi possível atualizar a edição.");
     } finally {
       setSavingEdit(false);
     }
   }
 
   async function promptEditEdition(edition: Edition) {
-    const nextTitle = window.prompt("Título da edição:", edition.title);
-    if (nextTitle === null) return;
-    const nextNumber = window.prompt("Número da edição:", edition.number);
-    if (nextNumber === null) return;
-    const nextDate = window.prompt(
-      "Data de publicação (AAAA-MM-DD):",
-      new Date(edition.publishedAt).toISOString().slice(0, 10),
-    );
-    if (nextDate === null) return;
+    const Swal = await getSwal();
+    const currentDate = new Date(edition.publishedAt).toISOString().slice(0, 10);
+    const result = await Swal.fire({
+      title: "Editar edição",
+      html: `
+        <div class="space-y-3 text-left">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#6b6257]">
+            Título
+            <input id="edition-title" class="swal2-input" value="${escapeAttribute(edition.title)}" />
+          </label>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#6b6257]">
+            Número
+            <input id="edition-number" class="swal2-input" value="${escapeAttribute(edition.number)}" />
+          </label>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#6b6257]">
+            Data de publicação
+            <input id="edition-date" class="swal2-input" type="date" value="${currentDate}" />
+          </label>
+        </div>
+      `,
+      confirmButtonText: "Salvar",
+      cancelButtonText: "Cancelar",
+      showCancelButton: true,
+      confirmButtonColor: "#1f7a4d",
+      cancelButtonColor: "#6b6257",
+      preConfirm: () => {
+        const title = getModalInputValue("edition-title");
+        const number = getModalInputValue("edition-number");
+        const publishedAt = getModalInputValue("edition-date");
+        if (!title || !number || !publishedAt) {
+          Swal.showValidationMessage("Preencha título, número e data.");
+          return false;
+        }
+        return { title, number, publishedAt };
+      },
+    });
+
+    if (!result.isConfirmed || !result.value) return;
 
     try {
       await updateEdition({
         id: edition.id,
-        title: nextTitle.trim() || "Sem título",
-        number: nextNumber.trim() || edition.number,
-        publishedAt: new Date(nextDate).toISOString(),
+        title: result.value.title,
+        number: result.value.number,
+        publishedAt: new Date(result.value.publishedAt).toISOString(),
       });
       await onChange();
     } catch (error) {
       console.error(error);
-      alert("Não foi possível atualizar a edição.");
+      void showError("Não foi possível atualizar a edição.");
     }
   }
 
@@ -606,7 +636,7 @@ function EditionsSection({
               </button>
             <button
               onClick={async () => {
-                if (confirm("Excluir esta edição?")) {
+                if (await confirmAction("Excluir esta edição?", "Esta ação remove o PDF e não pode ser desfeita.")) {
                   await deleteEdition(e);
                   await onChange();
                 }
@@ -664,7 +694,7 @@ function SponsorsSection({
       await onChange();
     } catch (error) {
       console.error(error);
-      alert("Não foi possível salvar o patrocinador.");
+      void showError("Não foi possível salvar o patrocinador.");
     } finally {
       setBusy(false);
     }
@@ -676,29 +706,70 @@ function SponsorsSection({
   }
 
   async function promptEditSponsor(s: Sponsor) {
-    const nextName = window.prompt("Nome do patrocinador:", s.name);
-    if (nextName === null) return;
-    const nextUrl = window.prompt("Site (URL):", s.url);
-    if (nextUrl === null) return;
-    const nextWhatsapp = window.prompt("WhatsApp:", s.whatsapp);
-    if (nextWhatsapp === null) return;
-    const nextAddress = window.prompt("Endereço:", s.address);
-    if (nextAddress === null) return;
-    const nextActive = window.confirm("Deixar este patrocinador ativo no site?");
+    const Swal = await getSwal();
+    const result = await Swal.fire({
+      title: "Editar patrocinador",
+      html: `
+        <div class="space-y-3 text-left">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#6b6257]">
+            Nome
+            <input id="sponsor-name" class="swal2-input" value="${escapeAttribute(s.name)}" />
+          </label>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#6b6257]">
+            Site (URL)
+            <input id="sponsor-url" class="swal2-input" value="${escapeAttribute(s.url)}" />
+          </label>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#6b6257]">
+            WhatsApp
+            <input id="sponsor-whatsapp" class="swal2-input" value="${escapeAttribute(s.whatsapp)}" />
+          </label>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#6b6257]">
+            Endereço
+            <input id="sponsor-address" class="swal2-input" value="${escapeAttribute(s.address)}" />
+          </label>
+          <label class="mt-2 flex items-center gap-2 text-sm text-[#2f2a22]">
+            <input id="sponsor-active" type="checkbox" ${s.active ? "checked" : ""} />
+            Ativo no site
+          </label>
+        </div>
+      `,
+      confirmButtonText: "Salvar",
+      cancelButtonText: "Cancelar",
+      showCancelButton: true,
+      confirmButtonColor: "#1f7a4d",
+      cancelButtonColor: "#6b6257",
+      preConfirm: () => {
+        const name = getModalInputValue("sponsor-name");
+        if (!name) {
+          Swal.showValidationMessage("Informe o nome do patrocinador.");
+          return false;
+        }
+        return {
+          name,
+          url: getModalInputValue("sponsor-url"),
+          whatsapp: getModalInputValue("sponsor-whatsapp"),
+          address: getModalInputValue("sponsor-address"),
+          active: Boolean((document.getElementById("sponsor-active") as HTMLInputElement | null)
+            ?.checked),
+        };
+      },
+    });
+
+    if (!result.isConfirmed || !result.value) return;
 
     try {
       await updateSponsor({
         ...s,
-        name: nextName.trim() || s.name,
-        url: nextUrl.trim(),
-        whatsapp: nextWhatsapp.trim(),
-        address: nextAddress.trim(),
-        active: nextActive,
+        name: result.value.name,
+        url: result.value.url,
+        whatsapp: result.value.whatsapp,
+        address: result.value.address,
+        active: result.value.active,
       });
       await onChange();
     } catch (error) {
       console.error(error);
-      alert("Não foi possível atualizar o patrocinador.");
+      void showError("Não foi possível atualizar o patrocinador.");
     }
   }
 
@@ -815,7 +886,7 @@ function SponsorsSection({
               </button>
               <button
                 onClick={async () => {
-                  if (confirm("Excluir patrocinador?")) {
+                  if (await confirmAction("Excluir patrocinador?", "Esta ação remove o cadastro e a imagem enviada.")) {
                     await deleteSponsor(s);
                     await onChange();
                   }
@@ -831,6 +902,55 @@ function SponsorsSection({
       </ul>
     </section>
   );
+}
+
+async function getSwal() {
+  const { default: Swal } = await import("sweetalert2");
+  return Swal;
+}
+
+async function showError(message: string) {
+  const Swal = await getSwal();
+  await Swal.fire({
+    icon: "error",
+    title: "Algo deu errado",
+    text: message,
+    confirmButtonText: "Fechar",
+    confirmButtonColor: "#1f7a4d",
+  });
+}
+
+async function confirmAction(title: string, text: string) {
+  const Swal = await getSwal();
+  const result = await Swal.fire({
+    icon: "warning",
+    title,
+    text,
+    showCancelButton: true,
+    confirmButtonText: "Excluir",
+    cancelButtonText: "Cancelar",
+    confirmButtonColor: "#b42318",
+    cancelButtonColor: "#6b6257",
+  });
+
+  return result.isConfirmed;
+}
+
+function getModalInputValue(id: string) {
+  return (document.getElementById(id) as HTMLInputElement | null)?.value.trim() ?? "";
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function escapeAttribute(value: string) {
+  return escapeHtml(value).replace(/`/g, "&#096;");
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
