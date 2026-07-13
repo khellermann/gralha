@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Flipbook } from "@/components/Flipbook";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { SponsorCarousel } from "@/components/SponsorCarousel";
 import { getEdition, type Edition } from "@/lib/store";
 
 export const Route = createFileRoute("/edicao/$id")({
@@ -64,6 +65,16 @@ function EditionPage() {
             </header>
 
             <Flipbook edition={edition} />
+
+            <section className="py-12 w-full">
+              <div className="text-center mb-6">
+                <p className="text-xs uppercase tracking-[0.35em] text-primary">Apoio Cultural</p>
+                <h3 className="text-serif text-3xl sm:text-4xl font-black text-ink">
+                  Quem apoia A Gralha
+                </h3>
+              </div>
+              <SponsorCarousel />
+            </section>
           </>
         )}
       </main>
