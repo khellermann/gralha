@@ -119,6 +119,24 @@ export async function saveEdition(input: {
   if (error) throw error;
 }
 
+export async function updateEdition(input: {
+  id: string;
+  title: string;
+  number: string;
+  publishedAt: string;
+}) {
+  const { error } = await supabase
+    .from("editions")
+    .update({
+      title: input.title,
+      number: input.number,
+      published_at: input.publishedAt,
+    })
+    .eq("id", input.id);
+
+  if (error) throw error;
+}
+
 export async function deleteEdition(edition: Edition) {
   const { error } = await supabase.from("editions").delete().eq("id", edition.id);
   if (error) throw error;
@@ -183,6 +201,7 @@ export async function updateSponsor(sponsor: Sponsor) {
       url: sponsor.url || null,
       whatsapp: sponsor.whatsapp || null,
       address: sponsor.address || null,
+      image_path: sponsor.imagePath,
     })
     .eq("id", sponsor.id);
 

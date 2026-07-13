@@ -5,6 +5,7 @@ import {
   BarChart3,
   BookOpen,
   CalendarDays,
+  Edit3,
   ExternalLink,
   Feather,
   ImageIcon,
@@ -31,6 +32,7 @@ import {
   signIn,
   signOut,
   uid,
+  updateEdition,
   updateSponsor,
   uploadEditionPdf,
   uploadSponsorImage,
@@ -427,6 +429,18 @@ function EditionsSection({
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
+  const [editingEdition, setEditingEdition] = useState<Edition | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editNumber, setEditNumber] = useState("");
+  const [editPublishedAt, setEditPublishedAt] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  function cancelEdit() {
+    setEditingEdition(null);
+    setEditTitle("");
+    setEditNumber("");
+    setEditPublishedAt("");
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -461,6 +475,52 @@ function EditionsSection({
     } finally {
       setBusy(false);
       setProgress("");
+    }
+  }
+
+  async function saveEdit(e: FormEvent) {
+    e.preventDefault();
+    if (!editingEdition) return;
+    setSavingEdit(true);
+    try {
+      await updateEdition({
+        id: editingEdition.id,
+        title: editTitle.trim() || "Sem título",
+        number: editNumber.trim() || editingEdition.number,
+        publishedAt: new Date(editPublishedAt).toISOString(),
+      });
+      cancelEdit();
+      await onChange();
+    } catch (error) {
+      console.error(error);
+      alert("Não foi possível atualizar a edição.");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  async function promptEditEdition(edition: Edition) {
+    const nextTitle = window.prompt("Título da edição:", edition.title);
+    if (nextTitle === null) return;
+    const nextNumber = window.prompt("Número da edição:", edition.number);
+    if (nextNumber === null) return;
+    const nextDate = window.prompt(
+      "Data de publicação (AAAA-MM-DD):",
+      new Date(edition.publishedAt).toISOString().slice(0, 10),
+    );
+    if (nextDate === null) return;
+
+    try {
+      await updateEdition({
+        id: edition.id,
+        title: nextTitle.trim() || "Sem título",
+        number: nextNumber.trim() || edition.number,
+        publishedAt: new Date(nextDate).toISOString(),
+      });
+      await onChange();
+    } catch (error) {
+      console.error(error);
+      alert("Não foi possível atualizar a edição.");
     }
   }
 
@@ -536,6 +596,14 @@ function EditionsSection({
                 {new Date(e.publishedAt).toLocaleDateString("pt-BR")} · {e.pageCount} pág.
               </p>
             </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                onClick={() => void promptEditEdition(e)}
+                className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-primary hover:text-primary-foreground transition"
+                aria-label="Editar"
+              >
+                <Edit3 className="h-4 w-4" />
+              </button>
             <button
               onClick={async () => {
                 if (confirm("Excluir esta edição?")) {
@@ -548,6 +616,7 @@ function EditionsSection({
             >
               <Trash2 className="h-4 w-4" />
             </button>
+            </div>
           </li>
         ))}
       </ul>
@@ -604,6 +673,33 @@ function SponsorsSection({
   async function toggleActive(s: Sponsor) {
     await updateSponsor({ ...s, active: !s.active });
     await onChange();
+  }
+
+  async function promptEditSponsor(s: Sponsor) {
+    const nextName = window.prompt("Nome do patrocinador:", s.name);
+    if (nextName === null) return;
+    const nextUrl = window.prompt("Site (URL):", s.url);
+    if (nextUrl === null) return;
+    const nextWhatsapp = window.prompt("WhatsApp:", s.whatsapp);
+    if (nextWhatsapp === null) return;
+    const nextAddress = window.prompt("Endereço:", s.address);
+    if (nextAddress === null) return;
+    const nextActive = window.confirm("Deixar este patrocinador ativo no site?");
+
+    try {
+      await updateSponsor({
+        ...s,
+        name: nextName.trim() || s.name,
+        url: nextUrl.trim(),
+        whatsapp: nextWhatsapp.trim(),
+        address: nextAddress.trim(),
+        active: nextActive,
+      });
+      await onChange();
+    } catch (error) {
+      console.error(error);
+      alert("Não foi possível atualizar o patrocinador.");
+    }
   }
 
   return (
@@ -700,27 +796,36 @@ function SponsorsSection({
                 <p className="text-xs text-muted-foreground truncate">EndereÃ§o: {s.address}</p>
               )}
             </div>
-            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-              <input
-                type="checkbox"
-                checked={s.active}
-                onChange={() => void toggleActive(s)}
-                className="accent-primary"
-              />
-              Ativo
-            </label>
-            <button
-              onClick={async () => {
-                if (confirm("Excluir patrocinador?")) {
-                  await deleteSponsor(s);
-                  await onChange();
-                }
-              }}
-              className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition"
-              aria-label="Excluir"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={s.active}
+                  onChange={() => void toggleActive(s)}
+                  className="accent-primary"
+                />
+                Ativo
+              </label>
+              <button
+                onClick={() => void promptEditSponsor(s)}
+                className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-primary hover:text-primary-foreground transition"
+                aria-label="Editar"
+              >
+                <Edit3 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={async () => {
+                  if (confirm("Excluir patrocinador?")) {
+                    await deleteSponsor(s);
+                    await onChange();
+                  }
+                }}
+                className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition"
+                aria-label="Excluir"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </li>
         ))}
       </ul>
