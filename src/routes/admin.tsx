@@ -2,14 +2,19 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import {
+  BarChart3,
+  BookOpen,
+  CalendarDays,
   ExternalLink,
   Feather,
   ImageIcon,
+  LayoutDashboard,
   Loader2,
   LogOut,
   Plus,
   Trash2,
   Upload,
+  Users,
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
@@ -144,6 +149,7 @@ function LoginForm() {
 function Dashboard() {
   const [editions, setEditions] = useState<Edition[]>([]);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [activePanel, setActivePanel] = useState<"overview" | "editions" | "sponsors">("overview");
   const [loading, setLoading] = useState(true);
 
   async function load() {
@@ -162,8 +168,8 @@ function Dashboard() {
   }, []);
 
   return (
-    <div>
-      <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
+    <div className="space-y-8">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-primary">Redação</p>
           <h1 className="text-serif text-3xl sm:text-4xl font-black text-ink">Painel do Editor</h1>
@@ -176,12 +182,235 @@ function Dashboard() {
         </button>
       </div>
 
-      {loading && <div className="mb-6 text-sm text-muted-foreground">Carregando dados...</div>}
-      <div className="grid gap-10 lg:grid-cols-2">
-        <EditionsSection editions={editions} onChange={load} />
-        <SponsorsSection sponsors={sponsors} onChange={load} />
+      {loading && <div className="text-sm text-muted-foreground">Carregando dados...</div>}
+
+      <DashboardStats editions={editions} sponsors={sponsors} />
+
+      <div className="flex flex-wrap gap-2 rounded-xl border border-ink/15 bg-card p-2 paper-shadow">
+        <PanelButton
+          active={activePanel === "overview"}
+          icon={<LayoutDashboard className="h-4 w-4" />}
+          label="Visão geral"
+          onClick={() => setActivePanel("overview")}
+        />
+        <PanelButton
+          active={activePanel === "editions"}
+          icon={<BookOpen className="h-4 w-4" />}
+          label="Gerenciar edições"
+          onClick={() => setActivePanel("editions")}
+        />
+        <PanelButton
+          active={activePanel === "sponsors"}
+          icon={<Users className="h-4 w-4" />}
+          label="Gerenciar patrocinadores"
+          onClick={() => setActivePanel("sponsors")}
+        />
       </div>
+
+      {activePanel === "overview" && (
+        <DashboardOverview
+          editions={editions}
+          sponsors={sponsors}
+          onManageEditions={() => setActivePanel("editions")}
+          onManageSponsors={() => setActivePanel("sponsors")}
+        />
+      )}
+
+      {activePanel === "editions" && <EditionsSection editions={editions} onChange={load} />}
+
+      {activePanel === "sponsors" && <SponsorsSection sponsors={sponsors} onChange={load} />}
     </div>
+  );
+}
+
+function DashboardStats({ editions, sponsors }: { editions: Edition[]; sponsors: Sponsor[] }) {
+  const activeSponsors = sponsors.filter((s) => s.active).length;
+  const latestEdition = editions[0];
+  const totalPages = editions.reduce((sum, edition) => sum + edition.pageCount, 0);
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard
+        icon={<BookOpen className="h-5 w-5" />}
+        label="Edições publicadas"
+        value={String(editions.length)}
+        detail={`${totalPages} páginas no acervo`}
+      />
+      <StatCard
+        icon={<CalendarDays className="h-5 w-5" />}
+        label="Última edição"
+        value={latestEdition ? `Nº ${latestEdition.number}` : "-"}
+        detail={latestEdition ? latestEdition.title : "Nenhuma edição publicada"}
+      />
+      <StatCard
+        icon={<Users className="h-5 w-5" />}
+        label="Patrocinadores ativos"
+        value={String(activeSponsors)}
+        detail={`${sponsors.length} cadastrados no total`}
+      />
+      <StatCard
+        icon={<BarChart3 className="h-5 w-5" />}
+        label="Status do apoio"
+        value={sponsors.length ? `${Math.round((activeSponsors / sponsors.length) * 100)}%` : "0%"}
+        detail="Patrocinadores visíveis no site"
+      />
+    </div>
+  );
+}
+
+function DashboardOverview({
+  editions,
+  sponsors,
+  onManageEditions,
+  onManageSponsors,
+}: {
+  editions: Edition[];
+  sponsors: Sponsor[];
+  onManageEditions: () => void;
+  onManageSponsors: () => void;
+}) {
+  const recentEditions = editions.slice(0, 4);
+  const recentSponsors = sponsors.slice(-4).reverse();
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+      <section className="rounded-xl border border-ink/15 bg-card paper-shadow p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-primary">Acervo</p>
+            <h2 className="text-serif text-2xl font-black text-ink">Edições recentes</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onManageEditions}
+            className="inline-flex items-center gap-2 rounded-md border border-ink/20 px-3 py-2 text-xs font-semibold text-ink transition hover:bg-ink hover:text-paper"
+          >
+            <Plus className="h-4 w-4" /> Nova edição
+          </button>
+        </div>
+
+        <ul className="mt-5 space-y-3">
+          {recentEditions.length === 0 && (
+            <li className="rounded-md border border-dashed border-ink/20 bg-paper p-4 text-sm text-muted-foreground">
+              Nenhuma edição publicada ainda.
+            </li>
+          )}
+          {recentEditions.map((edition) => (
+            <li
+              key={edition.id}
+              className="flex items-center justify-between gap-3 rounded-md border border-ink/10 bg-paper px-4 py-3"
+            >
+              <div className="min-w-0">
+                <p className="font-semibold text-ink truncate">
+                  Nº {edition.number} - {edition.title}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(edition.publishedAt).toLocaleDateString("pt-BR")} ·{" "}
+                  {edition.pageCount} pág.
+                </p>
+              </div>
+              <BookOpen className="h-4 w-4 shrink-0 text-primary" />
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="rounded-xl border border-ink/15 bg-card paper-shadow p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-primary">Apoio</p>
+            <h2 className="text-serif text-2xl font-black text-ink">Patrocinadores</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onManageSponsors}
+            className="inline-flex items-center gap-2 rounded-md border border-ink/20 px-3 py-2 text-xs font-semibold text-ink transition hover:bg-ink hover:text-paper"
+          >
+            <ImageIcon className="h-4 w-4" /> Gerenciar
+          </button>
+        </div>
+
+        <ul className="mt-5 space-y-3">
+          {recentSponsors.length === 0 && (
+            <li className="rounded-md border border-dashed border-ink/20 bg-paper p-4 text-sm text-muted-foreground">
+              Nenhum patrocinador cadastrado.
+            </li>
+          )}
+          {recentSponsors.map((sponsor) => (
+            <li
+              key={sponsor.id}
+              className="flex items-center justify-between gap-3 rounded-md border border-ink/10 bg-paper px-4 py-3"
+            >
+              <div className="min-w-0">
+                <p className="font-semibold text-ink truncate">{sponsor.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {sponsor.active ? "Visível no site" : "Inativo"}
+                </p>
+              </div>
+              <span
+                className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${
+                  sponsor.active
+                    ? "bg-primary/15 text-primary"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {sponsor.active ? "Ativo" : "Inativo"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  );
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  detail,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <section className="rounded-xl border border-ink/15 bg-card p-5 paper-shadow">
+      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
+        {icon}
+      </div>
+      <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{label}</p>
+      <p className="mt-2 text-3xl font-black text-ink">{value}</p>
+      <p className="mt-1 truncate text-sm text-muted-foreground">{detail}</p>
+    </section>
+  );
+}
+
+function PanelButton({
+  active,
+  icon,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition sm:flex-none ${
+        active
+          ? "bg-ink text-paper paper-shadow"
+          : "text-muted-foreground hover:bg-paper hover:text-ink"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
 
