@@ -48,12 +48,16 @@ export const Route = createFileRoute("/edicao/$id")({
     });
     const title = `${edition.title} - Edição Nº ${edition.number} - A Gralha`;
     const description = `Leia a edição Nº ${edition.number} de A Gralha, publicada em ${dateLabel}, no acervo digital do jornal cultural.`;
+    const previewImage = `/og/edicao/${edition.id}.png`;
     const seo = createSeo({
       title,
       description,
       path,
       type: "article",
+      image: previewImage,
       imageAlt: `Capa da edição Nº ${edition.number} de A Gralha`,
+      imageWidth: "1200",
+      imageHeight: "630",
     });
 
     return {
@@ -65,6 +69,7 @@ export const Route = createFileRoute("/edicao/$id")({
           name: edition.title,
           headline: title,
           url: absoluteUrl(path),
+          image: absoluteUrl(previewImage),
           description,
           inLanguage: "pt-BR",
           datePublished: edition.publishedAt,

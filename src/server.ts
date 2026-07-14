@@ -1,6 +1,7 @@
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
+import { renderEditionPreviewResponse } from "./lib/edition-preview-image";
 import { renderErrorPage } from "./lib/error-page";
 
 type ServerEntry = {
@@ -47,6 +48,13 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const url = new URL(request.url);
+      const editionPreviewMatch = url.pathname.match(/^\/og\/edicao\/([^/]+)\.png$/);
+
+      if (request.method === "GET" && editionPreviewMatch) {
+        return await renderEditionPreviewResponse(editionPreviewMatch[1]);
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
