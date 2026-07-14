@@ -9,37 +9,69 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
+import { jsonLd, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 import appCss from "../styles.css?url";
-
-const siteUrl =
-  (import.meta.env.VITE_SITE_URL as string | undefined) ?? "https://gralha.vercel.app";
-const siteTitle = "A Gralha - Jornal Cultural";
-const siteDescription =
-  "Jornal literário e artístico A Gralha - edições completas, colunas e vozes da cultura brasileira.";
-const socialImageUrl = `${siteUrl.replace(/\/$/, "")}/social-preview.png`;
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Página não encontrada</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          A página que você procura não existe ou foi movida.
-        </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Voltar para a home
-          </Link>
-        </div>
-      </div>
+    <div className="min-h-screen bg-paper-grain px-4 py-10 text-ink">
+      <main className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl items-center justify-center">
+        <section className="w-full overflow-hidden rounded-md border border-ink/15 bg-card/85 paper-shadow">
+          <div className="border-b border-ink/15 bg-paper/75 px-5 py-4 text-center sm:px-8">
+            <p className="text-[10px] uppercase tracking-[0.45em] text-muted-foreground">
+              Jornal Cultural
+            </p>
+            <h1 className="mt-2 text-serif text-3xl font-black text-ink sm:text-5xl">
+              A Gralha
+            </h1>
+          </div>
+
+          <div className="grid gap-8 px-6 py-10 sm:px-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+            <div className="mx-auto w-full max-w-xs rotate-[-1deg] rounded-md border border-ink/20 bg-paper p-5 paper-shadow">
+              <div className="rule-double py-3 text-center">
+                <p className="text-xs uppercase tracking-[0.35em] text-primary">Página perdida</p>
+                <strong className="mt-3 block text-serif text-7xl font-black leading-none text-ink sm:text-8xl">
+                  404
+                </strong>
+              </div>
+              <div className="mt-5 space-y-2">
+                <span className="block h-1.5 w-full rounded-full bg-ink/15" />
+                <span className="block h-1.5 w-10/12 rounded-full bg-ink/15" />
+                <span className="block h-1.5 w-8/12 rounded-full bg-primary/25" />
+              </div>
+            </div>
+
+            <div className="text-center lg:text-left">
+              <p className="text-xs uppercase tracking-[0.35em] text-primary">Fora do acervo</p>
+              <h2 className="mt-3 text-serif text-3xl font-black leading-tight text-ink sm:text-5xl">
+                Esta página escapou da edição.
+              </h2>
+              <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base lg:mx-0">
+                O endereço pode ter mudado, sido arquivado ou simplesmente não existir. Você pode
+                voltar para a capa do jornal ou seguir direto para o acervo completo.
+              </p>
+
+              <div className="mt-7 flex flex-wrap justify-center gap-3 lg:justify-start">
+                <Link
+                  to="/"
+                  className="inline-flex items-center justify-center rounded-full bg-gralha-gradient px-5 py-3 text-sm font-semibold text-primary-foreground paper-shadow hover:brightness-110 transition"
+                >
+                  Voltar para a home
+                </Link>
+                <Link
+                  to="/acervo"
+                  className="inline-flex items-center justify-center rounded-full border border-ink/25 px-5 py-3 text-sm font-semibold text-ink transition-colors hover:bg-ink hover:text-paper"
+                >
+                  Ver acervo completo
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
-
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   useEffect(() => {
@@ -82,25 +114,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: siteTitle },
-      { name: "description", content: siteDescription },
-      { name: "author", content: "Editora A Gralha" },
-      { property: "og:site_name", content: "A Gralha" },
-      { property: "og:title", content: siteTitle },
-      { property: "og:description", content: siteDescription },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: siteUrl },
-      { property: "og:image", content: socialImageUrl },
-      { property: "og:image:secure_url", content: socialImageUrl },
-      { property: "og:image:type", content: "image/png" },
-      { property: "og:image:width", content: "512" },
-      { property: "og:image:height", content: "512" },
-      { property: "og:image:alt", content: "Logo do jornal cultural A Gralha" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: siteTitle },
-      { name: "twitter:description", content: siteDescription },
-      { name: "twitter:image", content: socialImageUrl },
-      { name: "twitter:image:alt", content: "Logo do jornal cultural A Gralha" },
     ],
     links: [
       {
@@ -109,8 +122,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "apple-touch-icon", href: "/social-preview.png" },
-      { rel: "canonical", href: siteUrl },
     ],
+    scripts: [jsonLd(websiteJsonLd()), jsonLd(organizationJsonLd())],
   }),
   shellComponent: RootShell,
   component: RootComponent,

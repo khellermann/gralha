@@ -1,38 +1,92 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { CulturalLoader } from "@/components/CulturalLoader";
 import { Flipbook } from "@/components/Flipbook";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { SponsorCarousel } from "@/components/SponsorCarousel";
+import { absoluteUrl, createSeo, jsonLd } from "@/lib/seo";
 import { getEdition, type Edition } from "@/lib/store";
 
 export const Route = createFileRoute("/edicao/$id")({
+  loader: ({ params }) => getEdition(params.id),
+  pendingComponent: () => (
+    <div className="min-h-screen flex flex-col bg-paper-grain">
+      <Header />
+      <main className="mx-auto max-w-6xl px-4 py-10 w-full flex-1">
+        <CulturalLoader
+          title="Carregando edição"
+          phrases={[
+            "Abrindo o acervo cultural...",
+            "Separando a edição escolhida...",
+            "Preparando as páginas...",
+            "Ajustando a tinta no papel...",
+          ]}
+          className="mt-8"
+        />
+      </main>
+      <Footer />
+    </div>
+  ),
+  head: ({ loaderData, params }) => {
+    const edition = loaderData as Edition | undefined;
+    const path = `/edicao/${params.id}`;
+
+    if (!edition) {
+      const seo = createSeo({
+        title: "Edição não encontrada - A Gralha",
+        description: "A edição solicitada não foi encontrada no acervo de A Gralha.",
+        path,
+      });
+
+      return seo;
+    }
+
+    const dateLabel = new Date(edition.publishedAt).toLocaleDateString("pt-BR", {
+      month: "long",
+      year: "numeric",
+    });
+    const title = `${edition.title} - Edição Nº ${edition.number} - A Gralha`;
+    const description = `Leia a edição Nº ${edition.number} de A Gralha, publicada em ${dateLabel}, no acervo digital do jornal cultural.`;
+    const seo = createSeo({
+      title,
+      description,
+      path,
+      type: "article",
+      imageAlt: `Capa da edição Nº ${edition.number} de A Gralha`,
+    });
+
+    return {
+      ...seo,
+      scripts: [
+        jsonLd({
+          "@context": "https://schema.org",
+          "@type": "CreativeWork",
+          name: edition.title,
+          headline: title,
+          url: absoluteUrl(path),
+          description,
+          inLanguage: "pt-BR",
+          datePublished: edition.publishedAt,
+          isPartOf: {
+            "@type": "Periodical",
+            name: "A Gralha",
+            url: absoluteUrl("/"),
+          },
+          publisher: {
+            "@type": "Organization",
+            name: "A Gralha",
+            url: absoluteUrl("/"),
+          },
+        }),
+      ],
+    };
+  },
   component: EditionPage,
 });
 
 function EditionPage() {
-  const { id } = useParams({ from: "/edicao/$id" });
-  const [edition, setEdition] = useState<Edition | undefined>();
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let alive = true;
-    setLoading(true);
-    getEdition(id)
-      .then((row) => {
-        if (alive) setEdition(row);
-      })
-      .catch((error) => console.error(error))
-      .finally(() => {
-        if (alive) setLoading(false);
-      });
-
-    return () => {
-      alive = false;
-    };
-  }, [id]);
+  const edition = Route.useLoaderData() as Edition | undefined;
 
   return (
     <div className="min-h-screen flex flex-col bg-paper-grain">
@@ -45,18 +99,7 @@ function EditionPage() {
           <ArrowLeft className="h-4 w-4" /> Voltar ao acervo
         </Link>
 
-        {loading ? (
-          <CulturalLoader
-            title="Carregando edição"
-            phrases={[
-              "Abrindo o acervo cultural...",
-              "Separando a edição escolhida...",
-              "Preparando as páginas...",
-              "Ajustando a tinta no papel...",
-            ]}
-            className="mt-8"
-          />
-        ) : !edition ? (
+        {!edition ? (
           <div className="mt-16 text-center text-muted-foreground">Edição não encontrada.</div>
         ) : (
           <>

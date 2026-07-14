@@ -8,9 +8,38 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { SponsorCarousel } from "@/components/SponsorCarousel";
 import { renderPdfPageToImage } from "@/lib/pdf";
+import { absoluteUrl, createSeo, jsonLd } from "@/lib/seo";
 import { getEditionPdfUrl, getEditions, type Edition } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
+  head: () => {
+    const seo = createSeo({
+      title: "A Gralha - Jornal Cultural de Literatura, Arte e Memória",
+      description:
+        "Leia A Gralha, jornal cultural com edições digitais, literatura, arte, memória e vozes da cultura brasileira.",
+      path: "/",
+    });
+
+    return {
+      ...seo,
+      scripts: [
+        jsonLd({
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          name: "A Gralha - Jornal Cultural",
+          url: absoluteUrl("/"),
+          description:
+            "Página inicial do jornal cultural A Gralha, com edição em destaque, edições recentes e apoiadores culturais.",
+          inLanguage: "pt-BR",
+          isPartOf: {
+            "@type": "WebSite",
+            name: "A Gralha",
+            url: absoluteUrl("/"),
+          },
+        }),
+      ],
+    };
+  },
   component: Index,
 });
 

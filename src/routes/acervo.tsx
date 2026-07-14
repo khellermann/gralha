@@ -5,9 +5,38 @@ import { CulturalLoader } from "@/components/CulturalLoader";
 import { EditionCard } from "@/components/EditionCard";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { absoluteUrl, createSeo, jsonLd } from "@/lib/seo";
 import { getEditions, type Edition } from "@/lib/store";
 
 export const Route = createFileRoute("/acervo")({
+  head: () => {
+    const seo = createSeo({
+      title: "Acervo completo - A Gralha",
+      description:
+        "Consulte o acervo completo de A Gralha, com todas as edições digitais do jornal cultural em ordem recente.",
+      path: "/acervo",
+    });
+
+    return {
+      ...seo,
+      scripts: [
+        jsonLd({
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Acervo completo - A Gralha",
+          url: absoluteUrl("/acervo"),
+          description:
+            "Arquivo completo das edições digitais do jornal cultural A Gralha.",
+          inLanguage: "pt-BR",
+          isPartOf: {
+            "@type": "WebSite",
+            name: "A Gralha",
+            url: absoluteUrl("/"),
+          },
+        }),
+      ],
+    };
+  },
   component: ArchivePage,
 });
 
