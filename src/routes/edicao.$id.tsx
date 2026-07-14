@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { CulturalLoader } from "@/components/CulturalLoader";
 import { Flipbook } from "@/components/Flipbook";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
@@ -45,7 +46,16 @@ function EditionPage() {
         </Link>
 
         {loading ? (
-          <div className="mt-16 text-center text-muted-foreground">Carregando edição...</div>
+          <CulturalLoader
+            title="Carregando edição"
+            phrases={[
+              "Abrindo o acervo cultural...",
+              "Separando a edição escolhida...",
+              "Preparando as páginas...",
+              "Ajustando a tinta no papel...",
+            ]}
+            className="mt-8"
+          />
         ) : !edition ? (
           <div className="mt-16 text-center text-muted-foreground">Edição não encontrada.</div>
         ) : (

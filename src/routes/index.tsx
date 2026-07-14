@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, BookOpen, Feather } from "lucide-react";
+import { CulturalLoader } from "@/components/CulturalLoader";
 import { EditionCard } from "@/components/EditionCard";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
@@ -168,25 +169,38 @@ function Index() {
 }
 
 function EmptyState({ loading }: { loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="mt-10 mx-auto max-w-2xl rounded-xl border border-dashed border-ink/25 bg-card/70 p-6 text-center">
+        <CulturalLoader
+          title="Carregando edições"
+          phrases={[
+            "Abrindo o acervo cultural...",
+            "Folheando histórias...",
+            "Preparando as capas...",
+            "Organizando literatura, arte e memória...",
+          ]}
+          className="py-4"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="mt-10 mx-auto max-w-2xl rounded-xl border border-dashed border-ink/25 bg-card/70 p-10 text-center">
       <Feather className="mx-auto h-10 w-10 text-primary" />
       <h3 className="mt-4 text-serif text-2xl font-bold text-ink">
-        {loading ? "Carregando edições..." : "Nenhuma edição publicada ainda"}
+        Nenhuma edição publicada ainda
       </h3>
       <p className="mt-2 text-sm text-muted-foreground">
-        {loading
-          ? "Estamos buscando o acervo publicado."
-          : "A primeira edição será exibida aqui. Editores podem publicar pelo painel administrativo."}
+        A primeira edição será exibida aqui. Editores podem publicar pelo painel administrativo.
       </p>
-      {!loading && (
-        <Link
-          to="/admin"
-          className="mt-4 inline-flex items-center gap-2 rounded-full border border-ink/25 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-ink hover:bg-ink hover:text-paper transition-colors"
-        >
-          Acessar painel
-        </Link>
-      )}
+      <Link
+        to="/admin"
+        className="mt-4 inline-flex items-center gap-2 rounded-full border border-ink/25 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-ink hover:bg-ink hover:text-paper transition-colors"
+      >
+        Acessar painel
+      </Link>
     </div>
   );
 }

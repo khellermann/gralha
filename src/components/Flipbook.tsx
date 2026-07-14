@@ -10,6 +10,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import { CulturalLoader } from "@/components/CulturalLoader";
 import { renderPdfToImages } from "@/lib/pdf";
 import { getEditionPdfUrl, type Edition } from "@/lib/store";
 
@@ -84,7 +85,7 @@ export function Flipbook({ edition }: Props) {
   }
 
   if (loading) {
-    return <div className="text-center py-20 text-muted-foreground">Carregando páginas...</div>;
+    return <CulturalLoader title="Carregando páginas" className="py-20" />;
   }
   if (pages.length === 0) {
     return (
