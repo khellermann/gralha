@@ -36,7 +36,8 @@ function Index() {
   }, []);
 
   const featured = editions[0];
-  const rest = editions.slice(1);
+  const recentEditions = editions.slice(1, 9);
+  const hasFullArchive = editions.length > 9;
 
   useEffect(() => {
     let alive = true;
@@ -132,21 +133,31 @@ function Index() {
         </div>
       </section>
 
-      {rest.length > 0 && (
+      {recentEditions.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 py-16 w-full">
           <div className="flex items-end justify-between mb-8 gap-4 flex-wrap">
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-primary">Acervo</p>
               <h3 className="text-serif text-3xl sm:text-4xl font-black text-ink">
-                Edições anteriores
+                Últimas edições
               </h3>
             </div>
-            <p className="text-sm text-muted-foreground max-w-sm">
-              Um arquivo vivo de vozes, colunas e visualidades.
-            </p>
+            <div className="flex flex-col items-start gap-3 sm:items-end">
+              <p className="text-sm text-muted-foreground max-w-sm sm:text-right">
+                Uma seleção recente de vozes, colunas e visualidades.
+              </p>
+              {hasFullArchive && (
+                <Link
+                  to="/acervo"
+                  className="inline-flex items-center gap-2 rounded-full border border-ink/25 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-ink hover:bg-ink hover:text-paper transition-colors"
+                >
+                  Ver acervo completo <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              )}
+            </div>
           </div>
           <div className="grid gap-8 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-            {rest.map((e, i) => (
+            {recentEditions.map((e, i) => (
               <EditionCard key={e.id} edition={e} index={i} />
             ))}
           </div>

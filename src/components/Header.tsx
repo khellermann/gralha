@@ -19,10 +19,9 @@ export function Header() {
         </Link>
         <nav className="flex items-center gap-4 text-sm">
           <Link
-            to="/"
+            to="/acervo"
             className="text-ink/70 hover:text-primary transition-colors hidden sm:inline"
             activeProps={{ className: "text-primary font-semibold" }}
-            activeOptions={{ exact: true }}
           >
             Acervo
           </Link>
