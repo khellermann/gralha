@@ -561,6 +561,53 @@ function EditionsSection({
     }
   }
 
+  async function promptUpdateEditionCover(edition: Edition) {
+    const Swal = await getSwal();
+    const result = await Swal.fire<File>({
+      title: "Atualizar capa",
+      html: `
+        <div class="text-left text-sm text-[#6b6257]">
+          <p>Envie a imagem da capa desta edição. Ela será usada nos cards e na prévia do link.</p>
+          <p class="mt-2 text-xs">Formatos aceitos: JPG, PNG ou WebP.</p>
+        </div>
+      `,
+      input: "file",
+      inputAttributes: {
+        accept: "image/png,image/jpeg,image/webp",
+        "aria-label": "Imagem da capa",
+      },
+      confirmButtonText: "Enviar capa",
+      cancelButtonText: "Cancelar",
+      showCancelButton: true,
+      confirmButtonColor: "#1f7a4d",
+      cancelButtonColor: "#6b6257",
+      preConfirm: (file) => {
+        if (!file) {
+          Swal.showValidationMessage("Escolha uma imagem para a capa.");
+          return false;
+        }
+
+        if (!file.type.startsWith("image/")) {
+          Swal.showValidationMessage("Envie um arquivo de imagem.");
+          return false;
+        }
+
+        return file;
+      },
+    });
+
+    if (!result.isConfirmed || !result.value) return;
+
+    try {
+      await uploadEditionCoverImage(edition.id, result.value);
+      await onChange();
+      await showSuccess("Capa atualizada com sucesso.");
+    } catch (error) {
+      console.error(error);
+      void showError("Não foi possível atualizar a capa.");
+    }
+  }
+
   return (
     <section className="rounded-xl border border-ink/15 bg-card paper-shadow p-6">
       <h2 className="text-serif text-2xl font-black text-ink flex items-center gap-2">
@@ -653,6 +700,13 @@ function EditionsSection({
                 aria-label="Editar"
               >
                 <Edit3 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => void promptUpdateEditionCover(e)}
+                className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-primary hover:text-primary-foreground transition"
+                aria-label="Atualizar capa"
+              >
+                <ImageIcon className="h-4 w-4" />
               </button>
             <button
               onClick={async () => {
@@ -934,6 +988,17 @@ async function showError(message: string) {
   await Swal.fire({
     icon: "error",
     title: "Algo deu errado",
+    text: message,
+    confirmButtonText: "Fechar",
+    confirmButtonColor: "#1f7a4d",
+  });
+}
+
+async function showSuccess(message: string) {
+  const Swal = await getSwal();
+  await Swal.fire({
+    icon: "success",
+    title: "Tudo certo",
     text: message,
     confirmButtonText: "Fechar",
     confirmButtonColor: "#1f7a4d",
