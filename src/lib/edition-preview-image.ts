@@ -1,10 +1,12 @@
-import { createCanvas, type Canvas } from "@napi-rs/canvas";
+import { createCanvas, DOMMatrix, ImageData, Path2D, type Canvas } from "@napi-rs/canvas";
 import { getEdition, getEditionPdfUrl, type Edition } from "@/lib/store";
 
 const PREVIEW_WIDTH = 1200;
 const PREVIEW_HEIGHT = 630;
-const COVER_MAX_WIDTH = 430;
-const COVER_MAX_HEIGHT = 520;
+const COVER_RENDER_MAX_WIDTH = 900;
+const COVER_RENDER_MAX_HEIGHT = 1100;
+const COVER_DISPLAY_MAX_WIDTH = 500;
+const COVER_DISPLAY_MAX_HEIGHT = 570;
 
 type CanvasRenderingContext = ReturnType<Canvas["getContext"]>;
 
@@ -31,6 +33,7 @@ async function renderPdfCoverCanvas(edition: Edition) {
     throw new Error(`Unable to download edition PDF: ${pdfResponse.status}`);
   }
 
+  ensurePdfCanvasGlobals();
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const pdfData = new Uint8Array(await pdfResponse.arrayBuffer());
   const documentTask = pdfjs.getDocument({
@@ -45,8 +48,8 @@ async function renderPdfCoverCanvas(edition: Edition) {
     const page = await document.getPage(edition.coverPageIndex + 1);
     const initialViewport = page.getViewport({ scale: 1 });
     const scale = Math.min(
-      COVER_MAX_WIDTH / initialViewport.width,
-      COVER_MAX_HEIGHT / initialViewport.height,
+      COVER_RENDER_MAX_WIDTH / initialViewport.width,
+      COVER_RENDER_MAX_HEIGHT / initialViewport.height,
       2.4,
     );
     const viewport = page.getViewport({ scale });
@@ -68,7 +71,7 @@ async function renderPdfCoverCanvas(edition: Edition) {
 async function composeEditionPreview(edition: Edition, coverCanvas: Canvas) {
   const canvas = createCanvas(PREVIEW_WIDTH, PREVIEW_HEIGHT);
   const ctx = canvas.getContext("2d");
-  paintBackground(ctx);
+  paintCoverBackground(ctx, coverCanvas);
   paintCover(ctx, coverCanvas);
   paintEditionText(ctx, edition);
   return canvas.encode("png");
@@ -77,7 +80,8 @@ async function composeEditionPreview(edition: Edition, coverCanvas: Canvas) {
 async function renderFallbackPreview() {
   const canvas = createCanvas(PREVIEW_WIDTH, PREVIEW_HEIGHT);
   const ctx = canvas.getContext("2d");
-  paintBackground(ctx);
+  paintFallbackBackground(ctx);
+  paintFallbackMark(ctx);
 
   ctx.fillStyle = "#17345c";
   ctx.font = "700 76px Georgia, serif";
@@ -89,7 +93,19 @@ async function renderFallbackPreview() {
   return canvas.encode("png");
 }
 
-function paintBackground(ctx: CanvasRenderingContext) {
+function ensurePdfCanvasGlobals() {
+  const globalScope = globalThis as typeof globalThis & {
+    DOMMatrix?: typeof DOMMatrix;
+    ImageData?: typeof ImageData;
+    Path2D?: typeof Path2D;
+  };
+
+  globalScope.DOMMatrix ??= DOMMatrix;
+  globalScope.ImageData ??= ImageData;
+  globalScope.Path2D ??= Path2D;
+}
+
+function paintFallbackBackground(ctx: CanvasRenderingContext) {
   ctx.fillStyle = "#f4efe5";
   ctx.fillRect(0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
@@ -104,19 +120,70 @@ function paintBackground(ctx: CanvasRenderingContext) {
   ctx.fillRect(18, 0, 8, PREVIEW_HEIGHT);
 }
 
-function paintCover(ctx: CanvasRenderingContext, coverCanvas: Canvas) {
-  const fit = containSize(coverCanvas.width, coverCanvas.height, COVER_MAX_WIDTH, COVER_MAX_HEIGHT);
-  const x = 116 + (COVER_MAX_WIDTH - fit.width) / 2;
-  const y = 58 + (COVER_MAX_HEIGHT - fit.height) / 2;
+function paintFallbackMark(ctx: CanvasRenderingContext) {
+  ctx.fillStyle = "#17345c";
+  ctx.fillRect(132, 144, 290, 64);
+  ctx.fillStyle = "#bf2f2f";
+  ctx.fillRect(132, 226, 520, 10);
+  ctx.fillStyle = "rgba(23, 52, 92, 0.18)";
+  ctx.fillRect(136, 372, 650, 8);
+  ctx.fillRect(136, 408, 580, 8);
+  ctx.fillRect(136, 444, 450, 8);
+}
 
-  ctx.fillStyle = "rgba(18, 28, 43, 0.22)";
-  ctx.fillRect(x + 18, y + 18, fit.width, fit.height);
+function paintCoverBackground(ctx: CanvasRenderingContext, coverCanvas: Canvas) {
+  const background = coverFillSize(coverCanvas.width, coverCanvas.height, PREVIEW_WIDTH, PREVIEW_HEIGHT);
+  ctx.drawImage(
+    coverCanvas,
+    background.sourceX,
+    background.sourceY,
+    background.sourceWidth,
+    background.sourceHeight,
+    0,
+    0,
+    PREVIEW_WIDTH,
+    PREVIEW_HEIGHT,
+  );
+
+  const wash = ctx.createLinearGradient(0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT);
+  wash.addColorStop(0, "rgba(8, 15, 27, 0.52)");
+  wash.addColorStop(0.45, "rgba(244, 239, 229, 0.35)");
+  wash.addColorStop(1, "rgba(8, 15, 27, 0.72)");
+  ctx.fillStyle = wash;
+  ctx.fillRect(0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT);
+
+  ctx.fillStyle = "rgba(244, 239, 229, 0.72)";
+  ctx.fillRect(0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT);
+
+  ctx.fillStyle = "rgba(23, 52, 92, 0.08)";
+  for (let y = 52; y < PREVIEW_HEIGHT; y += 30) {
+    ctx.fillRect(0, y, PREVIEW_WIDTH, 1);
+  }
+
+  ctx.fillStyle = "#17345c";
+  ctx.fillRect(0, 0, 18, PREVIEW_HEIGHT);
+  ctx.fillStyle = "#bf2f2f";
+  ctx.fillRect(18, 0, 8, PREVIEW_HEIGHT);
+}
+
+function paintCover(ctx: CanvasRenderingContext, coverCanvas: Canvas) {
+  const fit = containSize(
+    coverCanvas.width,
+    coverCanvas.height,
+    COVER_DISPLAY_MAX_WIDTH,
+    COVER_DISPLAY_MAX_HEIGHT,
+  );
+  const x = 76 + (COVER_DISPLAY_MAX_WIDTH - fit.width) / 2;
+  const y = (PREVIEW_HEIGHT - fit.height) / 2;
+
+  ctx.fillStyle = "rgba(18, 28, 43, 0.28)";
+  ctx.fillRect(x + 24, y + 24, fit.width, fit.height);
 
   ctx.fillStyle = "#fffaf0";
-  ctx.fillRect(x - 14, y - 14, fit.width + 28, fit.height + 28);
+  ctx.fillRect(x - 16, y - 16, fit.width + 32, fit.height + 32);
   ctx.strokeStyle = "rgba(23, 52, 92, 0.18)";
-  ctx.lineWidth = 3;
-  ctx.strokeRect(x - 14, y - 14, fit.width + 28, fit.height + 28);
+  ctx.lineWidth = 4;
+  ctx.strokeRect(x - 16, y - 16, fit.width + 32, fit.height + 32);
   ctx.drawImage(coverCanvas, x, y, fit.width, fit.height);
 }
 
@@ -126,25 +193,30 @@ function paintEditionText(ctx: CanvasRenderingContext, edition: Edition) {
     year: "numeric",
   });
 
+  const panelX = 650;
+
   ctx.fillStyle = "#bf2f2f";
-  ctx.font = "700 26px Arial, sans-serif";
-  ctx.fillText(`EDICAO No ${edition.number}`, 620, 142);
+  ctx.fillRect(panelX, 112, 92, 6);
+
+  ctx.fillStyle = "#17345c";
+  ctx.font = "700 28px Arial, sans-serif";
+  ctx.fillText(`Edição Nº ${edition.number}`, panelX, 162);
 
   ctx.fillStyle = "#172033";
-  ctx.font = "700 62px Georgia, serif";
-  wrapText(ctx, edition.title, 620, 230, 470, 70, 3);
+  ctx.font = "700 58px Georgia, serif";
+  wrapText(ctx, edition.title, panelX, 252, 455, 66, 3);
 
   ctx.fillStyle = "#3d4960";
   ctx.font = "400 30px Georgia, serif";
-  ctx.fillText(dateLabel, 624, 448);
+  ctx.fillText(dateLabel, panelX, 476);
 
   ctx.fillStyle = "#17345c";
-  ctx.font = "700 38px Georgia, serif";
-  ctx.fillText("A Gralha", 624, 528);
+  ctx.font = "700 42px Georgia, serif";
+  ctx.fillText("A Gralha", panelX, 550);
 
   ctx.fillStyle = "#3d4960";
   ctx.font = "400 22px Arial, sans-serif";
-  ctx.fillText("jornal cultural", 626, 562);
+  ctx.fillText("jornal cultural", panelX + 2, 582);
 }
 
 function containSize(width: number, height: number, maxWidth: number, maxHeight: number) {
@@ -152,6 +224,29 @@ function containSize(width: number, height: number, maxWidth: number, maxHeight:
   return {
     width: Math.round(width * ratio),
     height: Math.round(height * ratio),
+  };
+}
+
+function coverFillSize(width: number, height: number, targetWidth: number, targetHeight: number) {
+  const sourceRatio = width / height;
+  const targetRatio = targetWidth / targetHeight;
+
+  if (sourceRatio > targetRatio) {
+    const sourceWidth = Math.round(height * targetRatio);
+    return {
+      sourceX: Math.round((width - sourceWidth) / 2),
+      sourceY: 0,
+      sourceWidth,
+      sourceHeight: height,
+    };
+  }
+
+  const sourceHeight = Math.round(width / targetRatio);
+  return {
+    sourceX: 0,
+    sourceY: Math.round((height - sourceHeight) / 2),
+    sourceWidth: width,
+    sourceHeight,
   };
 }
 
