@@ -19,9 +19,9 @@ interface SeoInput {
   type?: "website" | "article";
   image?: string;
   imageAlt?: string;
-  imageType?: string;
-  imageWidth?: string;
-  imageHeight?: string;
+  imageType?: string | null;
+  imageWidth?: string | null;
+  imageHeight?: string | null;
 }
 
 export function absoluteUrl(path = "/") {
@@ -57,9 +57,9 @@ export function createSeo({
       { property: "og:url", content: url },
       { property: "og:image", content: imageUrl },
       { property: "og:image:secure_url", content: imageUrl },
-      { property: "og:image:type", content: imageType },
-      { property: "og:image:width", content: imageWidth },
-      { property: "og:image:height", content: imageHeight },
+      ...(imageType ? [{ property: "og:image:type", content: imageType }] : []),
+      ...(imageWidth ? [{ property: "og:image:width", content: imageWidth }] : []),
+      ...(imageHeight ? [{ property: "og:image:height", content: imageHeight }] : []),
       { property: "og:image:alt", content: imageAlt },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: title },

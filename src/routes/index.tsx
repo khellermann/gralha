@@ -9,7 +9,7 @@ import { Header } from "@/components/Header";
 import { SponsorCarousel } from "@/components/SponsorCarousel";
 import { renderPdfPageToImage } from "@/lib/pdf";
 import { absoluteUrl, createSeo, jsonLd } from "@/lib/seo";
-import { getEditionPdfUrl, getEditions, type Edition } from "@/lib/store";
+import { getEditionCoverImageUrl, getEditionPdfUrl, getEditions, type Edition } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
   head: () => {
@@ -69,21 +69,19 @@ function Index() {
   const hasFullArchive = editions.length > 9;
 
   useEffect(() => {
-    let alive = true;
-    setFeaturedCover(undefined);
+    setFeaturedCover(featured ? getEditionCoverImageUrl(featured.id) : undefined);
+  }, [featured]);
 
+  function fallbackFeaturedCover() {
     if (!featured) return;
 
     renderPdfPageToImage(getEditionPdfUrl(featured.pdfPath), featured.coverPageIndex + 1)
-      .then((url) => {
-        if (alive) setFeaturedCover(url);
-      })
-      .catch((error) => console.error(error));
-
-    return () => {
-      alive = false;
-    };
-  }, [featured]);
+      .then((url) => setFeaturedCover(url))
+      .catch((error) => {
+        console.error(error);
+        setFeaturedCover(undefined);
+      });
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-paper-grain">
@@ -116,6 +114,7 @@ function Index() {
                     <img
                       src={featuredCover}
                       alt={`Capa - ${featured.title}`}
+                      onError={fallbackFeaturedCover}
                       className="h-full w-full object-cover"
                     />
                   ) : (

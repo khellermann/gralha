@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { renderPdfPageToImage } from "@/lib/pdf";
-import { getEditionPdfUrl, type Edition } from "@/lib/store";
+import { getEditionCoverImageUrl, getEditionPdfUrl, type Edition } from "@/lib/store";
 
 interface Props {
   edition: Edition;
@@ -11,22 +11,20 @@ interface Props {
 }
 
 export function EditionCard({ edition, featured, index = 0 }: Props) {
-  const [cover, setCover] = useState<string | undefined>();
+  const [cover, setCover] = useState(() => getEditionCoverImageUrl(edition.id));
 
   useEffect(() => {
-    let alive = true;
-    setCover(undefined);
+    setCover(getEditionCoverImageUrl(edition.id));
+  }, [edition.id]);
 
+  function fallbackToPdfCover() {
     renderPdfPageToImage(getEditionPdfUrl(edition.pdfPath), edition.coverPageIndex + 1)
-      .then((url) => {
-        if (alive) setCover(url);
-      })
-      .catch((error) => console.error(error));
-
-    return () => {
-      alive = false;
-    };
-  }, [edition.id, edition.coverPageIndex, edition.pdfPath]);
+      .then((url) => setCover(url))
+      .catch((error) => {
+        console.error(error);
+        setCover(undefined);
+      });
+  }
 
   const dateLabel = new Date(edition.publishedAt).toLocaleDateString("pt-BR", {
     month: "long",
@@ -50,6 +48,7 @@ export function EditionCard({ edition, featured, index = 0 }: Props) {
             <img
               src={cover}
               alt={`Capa - ${edition.title}`}
+              onError={fallbackToPdfCover}
               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
             />
           ) : (

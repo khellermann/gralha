@@ -34,6 +34,7 @@ import {
   uid,
   updateEdition,
   updateSponsor,
+  uploadEditionCoverImage,
   uploadEditionPdf,
   uploadSponsorImage,
   type Edition,
@@ -428,6 +429,7 @@ function EditionsSection({
   const [number, setNumber] = useState("");
   const [publishedAt, setPublishedAt] = useState(() => new Date().toISOString().slice(0, 10));
   const [file, setFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
   const [editingEdition, setEditingEdition] = useState<Edition | null>(null);
@@ -445,12 +447,14 @@ function EditionsSection({
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!file) return;
+    if (!file || !coverFile) return;
     setBusy(true);
     try {
       const id = uid();
       setProgress("Lendo PDF...");
       const pageCount = await getPdfPageCount(file);
+      setProgress("Enviando capa...");
+      await uploadEditionCoverImage(id, coverFile);
       setProgress("Enviando PDF...");
       const pdfPath = await uploadEditionPdf(id, file);
       setProgress("Salvando edição...");
@@ -467,8 +471,11 @@ function EditionsSection({
       setTitle("");
       setNumber("");
       setFile(null);
+      setCoverFile(null);
       const input = document.getElementById("edition-file") as HTMLInputElement | null;
       if (input) input.value = "";
+      const coverInput = document.getElementById("edition-cover") as HTMLInputElement | null;
+      if (coverInput) coverInput.value = "";
       await onChange();
     } catch (error) {
       console.error(error);
@@ -597,6 +604,19 @@ function EditionsSection({
             className="w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-paper file:cursor-pointer"
             required
           />
+        </Field>
+        <Field label="Imagem da capa">
+          <input
+            id="edition-cover"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
+            className="w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-paper file:cursor-pointer"
+            required
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Envie a capa em JPG, PNG ou WebP. Ela será usada nos cards e na prévia do link.
+          </p>
         </Field>
         <button
           type="submit"

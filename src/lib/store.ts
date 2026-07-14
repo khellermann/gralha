@@ -141,7 +141,7 @@ export async function deleteEdition(edition: Edition) {
   const { error } = await supabase.from("editions").delete().eq("id", edition.id);
   if (error) throw error;
 
-  await supabase.storage.from(EDITIONS_BUCKET).remove([edition.pdfPath]);
+  await supabase.storage.from(EDITIONS_BUCKET).remove([edition.pdfPath, getEditionCoverImagePath(edition.id)]);
 }
 
 export async function uploadEditionPdf(id: string, file: File): Promise<string> {
@@ -156,8 +156,28 @@ export async function uploadEditionPdf(id: string, file: File): Promise<string> 
   return path;
 }
 
+export async function uploadEditionCoverImage(id: string, file: File): Promise<string> {
+  const path = getEditionCoverImagePath(id);
+  const { error } = await supabase.storage.from(EDITIONS_BUCKET).upload(path, file, {
+    cacheControl: "31536000",
+    contentType: file.type || "image/jpeg",
+    upsert: true,
+  });
+
+  if (error) throw error;
+  return path;
+}
+
 export function getEditionPdfUrl(pdfPath: string): string {
   return supabase.storage.from(EDITIONS_BUCKET).getPublicUrl(pdfPath).data.publicUrl;
+}
+
+export function getEditionCoverImagePath(id: string): string {
+  return `${id}/cover`;
+}
+
+export function getEditionCoverImageUrl(id: string): string {
+  return supabase.storage.from(EDITIONS_BUCKET).getPublicUrl(getEditionCoverImagePath(id)).data.publicUrl;
 }
 
 export async function getSponsors(): Promise<Sponsor[]> {

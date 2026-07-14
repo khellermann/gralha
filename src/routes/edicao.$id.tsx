@@ -56,8 +56,9 @@ export const Route = createFileRoute("/edicao/$id")({
       type: "article",
       image: previewImage,
       imageAlt: `Capa da edição Nº ${edition.number} de A Gralha`,
-      imageWidth: "1200",
-      imageHeight: "630",
+      imageType: null,
+      imageWidth: null,
+      imageHeight: null,
     });
 
     return {
