@@ -7,28 +7,66 @@ import {
   createRootRouteWithContext,
   useRouter,
 } from "@tanstack/react-router";
+import { Volume2, VolumeX } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { jsonLd, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [replayKey, setReplayKey] = useState(0);
+
+  function toggleSound() {
+    const nextSoundEnabled = !soundEnabled;
+    setSoundEnabled(nextSoundEnabled);
+
+    if (nextSoundEnabled) {
+      void unlockTypewriterAudio();
+      setReplayKey((current) => current + 1);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-paper-grain px-4 py-10 text-ink">
       <main className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl items-center justify-center">
         <section className="w-full overflow-hidden rounded-md border border-ink/15 bg-card/85 paper-shadow">
-          <div className="border-b border-ink/15 bg-paper/75 px-5 py-4 text-center sm:px-8">
-            <p className="text-[10px] uppercase tracking-[0.45em] text-muted-foreground">
-              Jornal Cultural
-            </p>
-            <h1 className="mt-2 text-serif text-3xl font-black text-ink sm:text-5xl">A Gralha</h1>
+          <div className="flex items-center justify-between gap-4 border-b border-ink/15 bg-paper/75 px-5 py-4 sm:px-8">
+            <div className="flex-1 text-center">
+              <p className="text-[10px] uppercase tracking-[0.45em] text-muted-foreground">
+                Jornal Cultural
+              </p>
+              <h1 className="mt-2 text-serif text-3xl font-black text-ink sm:text-5xl">A Gralha</h1>
+            </div>
+            <button
+              type="button"
+              onClick={toggleSound}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-ink/20 bg-card text-ink transition-colors hover:bg-ink hover:text-paper focus:outline-none focus:ring-2 focus:ring-ring"
+              aria-label={
+                soundEnabled
+                  ? "Desativar som da máquina de escrever"
+                  : "Ativar som da máquina de escrever"
+              }
+              title={
+                soundEnabled
+                  ? "Desativar som da máquina de escrever"
+                  : "Ativar som da máquina de escrever"
+              }
+            >
+              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </button>
           </div>
 
           <div className="grid gap-8 px-6 py-10 sm:px-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
             <div className="mx-auto w-full max-w-xs rotate-[-1deg] rounded-md border border-ink/20 bg-paper p-5 paper-shadow">
               <div className="rule-double py-3 text-center">
                 <p className="text-xs uppercase tracking-[0.35em] text-primary">
-                  <TypewriterText text="Página perdida" speed={45} />
+                  <TypewriterText
+                    text="Página perdida"
+                    speed={45}
+                    soundEnabled={soundEnabled}
+                    replayKey={replayKey}
+                  />
                 </p>
                 <strong className="mt-3 block text-serif text-7xl font-black leading-none text-ink sm:text-8xl">
                   404
@@ -43,7 +81,13 @@ function NotFoundComponent() {
 
             <div className="text-center lg:text-left">
               <p className="text-xs uppercase tracking-[0.35em] text-primary">
-                <TypewriterText text="Fora do acervo" delay={550} speed={48} />
+                <TypewriterText
+                  text="Fora do acervo"
+                  delay={550}
+                  speed={48}
+                  soundEnabled={soundEnabled}
+                  replayKey={replayKey}
+                />
               </p>
               <h2 className="mt-3 text-serif text-3xl font-black leading-tight text-ink sm:text-5xl">
                 <TypewriterText
@@ -51,6 +95,8 @@ function NotFoundComponent() {
                   delay={950}
                   speed={42}
                   cursor
+                  soundEnabled={soundEnabled}
+                  replayKey={replayKey}
                 />
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base lg:mx-0">
@@ -58,6 +104,8 @@ function NotFoundComponent() {
                   text="O endereço pode ter mudado, sido arquivado ou simplesmente não existir. Você pode voltar para a capa do jornal ou seguir direto para o acervo completo."
                   delay={2250}
                   speed={18}
+                  soundEnabled={soundEnabled}
+                  replayKey={replayKey}
                 />
               </p>
 
@@ -88,11 +136,15 @@ function TypewriterText({
   delay = 0,
   speed = 35,
   cursor = false,
+  soundEnabled = false,
+  replayKey = 0,
 }: {
   text: string;
   delay?: number;
   speed?: number;
   cursor?: boolean;
+  soundEnabled?: boolean;
+  replayKey?: number;
 }) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const [displayed, setDisplayed] = useState(prefersReducedMotion ? text : "");
@@ -112,6 +164,10 @@ function TypewriterText({
         index += 1;
         setDisplayed(text.slice(0, index));
 
+        if (soundEnabled && text[index - 1]?.trim()) {
+          playTypewriterTick();
+        }
+
         if (index < text.length) {
           typingTimer = window.setTimeout(typeNextCharacter, speed);
         }
@@ -124,7 +180,7 @@ function TypewriterText({
       window.clearTimeout(startTimer);
       if (typingTimer) window.clearTimeout(typingTimer);
     };
-  }, [delay, prefersReducedMotion, speed, text]);
+  }, [delay, prefersReducedMotion, replayKey, soundEnabled, speed, text]);
 
   return (
     <span aria-label={text}>
@@ -152,6 +208,46 @@ function usePrefersReducedMotion() {
   }, []);
 
   return prefersReducedMotion;
+}
+
+type WindowWithWebkitAudio = Window & {
+  webkitAudioContext?: typeof AudioContext;
+};
+
+let typewriterAudioContext: AudioContext | null = null;
+
+async function unlockTypewriterAudio() {
+  if (typeof window === "undefined") return;
+
+  const AudioContextConstructor =
+    window.AudioContext ?? (window as WindowWithWebkitAudio).webkitAudioContext;
+  if (!AudioContextConstructor) return;
+
+  typewriterAudioContext ??= new AudioContextConstructor();
+
+  if (typewriterAudioContext.state === "suspended") {
+    await typewriterAudioContext.resume().catch(() => undefined);
+  }
+}
+
+function playTypewriterTick() {
+  const context = typewriterAudioContext;
+  if (!context || context.state !== "running") return;
+
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  const now = context.currentTime;
+
+  oscillator.type = "square";
+  oscillator.frequency.setValueAtTime(650 + Math.random() * 260, now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.035, now + 0.004);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
+
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.04);
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
