@@ -39,12 +39,6 @@ export function Header() {
           >
             Acervo
           </Link>
-          <Link
-            to="/admin"
-            className="rounded-full border border-ink/25 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-ink hover:bg-ink hover:text-paper transition-colors"
-          >
-            Admin
-          </Link>
         </nav>
       </div>
     </header>
