@@ -17,13 +17,16 @@ function NotFoundComponent() {
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [replayKey, setReplayKey] = useState(0);
 
-  function toggleSound() {
+  async function toggleSound() {
     const nextSoundEnabled = !soundEnabled;
     setSoundEnabled(nextSoundEnabled);
 
     if (nextSoundEnabled) {
-      void unlockTypewriterAudio();
+      await unlockTypewriterAudio();
+      playTypewriterTick(true);
       setReplayKey((current) => current + 1);
+    } else {
+      void typewriterAudioContext?.suspend().catch(() => undefined);
     }
   }
 
@@ -50,7 +53,7 @@ function NotFoundComponent() {
               </button>
               <button
                 type="button"
-                onClick={toggleSound}
+                onClick={() => void toggleSound()}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/20 bg-card text-ink transition-colors hover:bg-ink hover:text-paper focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label={
                   soundEnabled
@@ -157,16 +160,10 @@ function TypewriterText({
   soundEnabled?: boolean;
   replayKey?: number;
 }) {
-  const prefersReducedMotion = usePrefersReducedMotion();
-  const [displayed, setDisplayed] = useState(prefersReducedMotion ? text : "");
+  const [displayed, setDisplayed] = useState("");
   const isTyping = displayed.length < text.length;
 
   useEffect(() => {
-    if (prefersReducedMotion) {
-      setDisplayed(text);
-      return;
-    }
-
     setDisplayed("");
     let typingTimer: ReturnType<typeof window.setTimeout> | undefined;
     const startTimer = window.setTimeout(() => {
@@ -192,34 +189,18 @@ function TypewriterText({
       window.clearTimeout(startTimer);
       if (typingTimer) window.clearTimeout(typingTimer);
     };
-  }, [delay, prefersReducedMotion, replayKey, soundEnabled, speed, text]);
+  }, [delay, replayKey, soundEnabled, speed, text]);
 
   return (
     <span aria-label={text} className="inline-block min-h-[1em]">
       <span aria-hidden="true">{displayed}</span>
-      {(cursor || isTyping) && !prefersReducedMotion && (
+      {(cursor || isTyping) && (
         <span aria-hidden="true" className="ml-1 inline-block animate-pulse text-primary">
           |
         </span>
       )}
     </span>
   );
-}
-
-function usePrefersReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
-
-    updatePreference();
-    mediaQuery.addEventListener("change", updatePreference);
-
-    return () => mediaQuery.removeEventListener("change", updatePreference);
-  }, []);
-
-  return prefersReducedMotion;
 }
 
 type WindowWithWebkitAudio = Window & {
@@ -242,24 +223,30 @@ async function unlockTypewriterAudio() {
   }
 }
 
-function playTypewriterTick() {
+function playTypewriterTick(stronger = false) {
   const context = typewriterAudioContext;
   if (!context || context.state !== "running") return;
 
   const oscillator = context.createOscillator();
   const gain = context.createGain();
   const now = context.currentTime;
+  const volume = stronger ? 0.12 : 0.055;
+  const duration = stronger ? 0.075 : 0.045;
 
   oscillator.type = "square";
-  oscillator.frequency.setValueAtTime(650 + Math.random() * 260, now);
+  oscillator.frequency.setValueAtTime(stronger ? 720 : 650 + Math.random() * 260, now);
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.035, now + 0.004);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
+  gain.gain.exponentialRampToValueAtTime(volume, now + 0.006);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
   oscillator.connect(gain);
   gain.connect(context.destination);
   oscillator.start(now);
-  oscillator.stop(now + 0.04);
+  oscillator.stop(now + duration + 0.01);
+
+  if (stronger && "vibrate" in navigator) {
+    navigator.vibrate(18);
+  }
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
