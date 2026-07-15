@@ -19,6 +19,13 @@ export function Header() {
         </Link>
         <nav className="flex items-center gap-4 text-sm">
           <Link
+            to="/editor"
+            className="text-ink/70 hover:text-primary transition-colors hidden md:inline"
+            activeProps={{ className: "text-primary font-semibold" }}
+          >
+            Editor
+          </Link>
+          <Link
             to="/acervo"
             className="text-ink/70 hover:text-primary transition-colors hidden sm:inline"
             activeProps={{ className: "text-primary font-semibold" }}
@@ -29,7 +36,7 @@ export function Header() {
             to="/admin"
             className="rounded-full border border-ink/25 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-ink hover:bg-ink hover:text-paper transition-colors"
           >
-            Editor
+            Admin
           </Link>
         </nav>
       </div>
