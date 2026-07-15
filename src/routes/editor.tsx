@@ -118,8 +118,10 @@ function EditorPage() {
               ))}
             </section>
 
-            <section className="prose prose-neutral mt-10 max-w-none text-ink prose-p:leading-relaxed prose-strong:text-ink">
-              <h2 className="text-serif text-3xl font-black text-ink">Mini Currículo</h2>
+            <section className="mt-10 max-w-[780px] text-[16px] leading-7 text-ink [&_p]:mb-2 [&_p]:text-left sm:[&_p]:text-justify [&_strong]:font-bold [&_strong]:text-ink">
+              <h2 className="mb-2 text-serif text-3xl font-black leading-tight text-ink">
+                Sobre o Editor
+              </h2>
               <p>
                 Possui graduação em Letras - Literatura, Especialização em Práticas e Vertentes -
                 Literatura Africana e Infantil e Mestrado no curso de Ciências da Religião na
