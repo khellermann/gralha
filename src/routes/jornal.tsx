@@ -1,22 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Globe2, Newspaper, Sparkles, Users } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { absoluteUrl, createSeo, jsonLd } from "@/lib/seo";
 
 const milestones = [
   {
-    icon: Newspaper,
+    mark: "01",
     label: "10+ edições",
     text: "Uma trajetória dedicada exclusivamente à cultura.",
   },
   {
-    icon: Users,
+    mark: "02",
     label: "10 mil+ exemplares",
     text: "Distribuição gratuita aproximando artistas e leitores.",
   },
   {
-    icon: Globe2,
+    mark: "03",
     label: "Brasil, Portugal e EUA",
     text: "A cultura atravessando cidades, estados e fronteiras.",
   },
@@ -69,7 +68,7 @@ function JornalPage() {
           to="/"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
         >
-          <ArrowLeft className="h-4 w-4" /> Voltar para a home
+          <span aria-hidden="true">←</span> Voltar para a home
         </Link>
 
         <article className="mt-8 border-y-4 border-double border-ink/70 py-6 sm:py-8">
@@ -99,9 +98,11 @@ function JornalPage() {
           </figure>
 
           <section className="mt-8 grid gap-4 md:grid-cols-3">
-            {milestones.map(({ icon: Icon, label, text }) => (
+            {milestones.map(({ mark, label, text }) => (
               <div key={label} className="border-y border-ink/15 py-4">
-                <Icon className="mx-auto h-6 w-6 text-primary md:mx-0" />
+                <span className="mx-auto flex h-9 w-9 items-center justify-center rounded-full border border-primary/40 text-xs font-black text-primary md:mx-0">
+                  {mark}
+                </span>
                 <h2 className="mt-3 text-center text-serif text-2xl font-black text-ink md:text-left">
                   {label}
                 </h2>
@@ -174,7 +175,9 @@ function JornalPage() {
             </div>
 
             <aside className="border-l-4 border-primary bg-card/70 px-5 py-5 paper-shadow">
-              <Sparkles className="h-7 w-7 text-primary" />
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-primary">
+                Linha editorial
+              </p>
               <p className="mt-4 text-serif text-2xl font-black leading-tight text-ink">
                 Quando tudo parecia parar, a cultura continuou seguindo em frente.
               </p>
