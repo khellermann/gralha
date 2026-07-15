@@ -31,7 +31,7 @@ export const Route = createFileRoute("/jornal")({
       title,
       description,
       path: "/jornal",
-      image: "/jornal-a-gralha.jfif",
+      image: "/jornal-cultural-a-gralha.jfif",
       imageAlt: "Imagem do Jornal Cultural A Gralha",
       imageType: null,
     });
@@ -44,7 +44,7 @@ export const Route = createFileRoute("/jornal")({
           "@type": "Article",
           headline: title,
           description,
-          image: absoluteUrl("/jornal-a-gralha.jfif"),
+          image: absoluteUrl("/jornal-cultural-a-gralha.jfif"),
           url: absoluteUrl("/jornal"),
           inLanguage: "pt-BR",
           publisher: {
@@ -83,7 +83,7 @@ function JornalPage() {
 
           <figure className="mt-8 overflow-hidden border border-ink/15 bg-card paper-shadow">
             <img
-              src="/jornal-a-gralha.jfif"
+              src="/jornal-cultural-a-gralha.jfif"
               alt="Jornal Cultural A Gralha"
               className="max-h-[520px] w-full object-cover object-top"
             />
