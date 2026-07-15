@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, BookOpen, Feather, GraduationCap, Newspaper, PenLine } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { BookOpen, Feather, GraduationCap, Newspaper, PenLine } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { RoughUnderline } from "@/components/RoughUnderline";
 import { absoluteUrl, createSeo, jsonLd } from "@/lib/seo";
 
 const works = [
@@ -75,14 +76,7 @@ function EditorPage() {
       <Header />
 
       <main className="mx-auto max-w-6xl px-4 py-10 sm:py-14 w-full flex-1">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" /> Voltar para a home
-        </Link>
-
-        <section className="mt-8 grid gap-10 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
+        <section className="grid gap-10 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
           <aside className="lg:sticky lg:top-28">
             <div className="overflow-hidden rounded-md border border-ink/15 bg-card paper-shadow">
               <img
@@ -93,7 +87,9 @@ function EditorPage() {
             </div>
             <div className="mt-5 border-l-4 border-primary bg-card/70 px-4 py-3 text-sm text-muted-foreground">
               <p className="font-semibold text-ink">Editor-chefe e idealizador</p>
-              <p>Jornal Cultural A Gralha</p>
+              <p>
+                Jornal Cultural <RoughUnderline>A Gralha</RoughUnderline>
+              </p>
             </div>
           </aside>
 
@@ -112,8 +108,20 @@ function EditorPage() {
               {highlights.map(({ icon: Icon, title, text }) => (
                 <div key={title} className="rounded-md border border-ink/10 bg-card/70 p-4">
                   <Icon className="h-5 w-5 text-primary" />
-                  <h2 className="mt-3 text-serif text-lg font-bold text-ink">{title}</h2>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{text}</p>
+                  <h2 className="mt-3 text-serif text-lg font-bold text-ink">
+                    {title === "A Gralha" ? <RoughUnderline>{title}</RoughUnderline> : title}
+                  </h2>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {title === "A Gralha" ? (
+                      <>
+                        Fundador da Editora <RoughUnderline>A Gralha</RoughUnderline> Cultural e
+                        idealizador do Jornal Cultural <RoughUnderline>A Gralha</RoughUnderline>,
+                        primeiro jornal 100% cultural do Norte Pioneiro.
+                      </>
+                    ) : (
+                      text
+                    )}
+                  </p>
                 </div>
               ))}
             </section>
@@ -144,11 +152,12 @@ function EditorPage() {
                 poeta alagoano Jorge de Lima.
               </p>
               <p>
-                Fundador da Editora A Gralha Cultural, em janeiro de 2021, é também o idealizador e
-                criador do primeiro jornal 100% cultural do Norte Pioneiro, A Gralha, lançado em
-                abril de 2021. O Jornal Cultural A Gralha já contemplou mais de 400 artistas
-                gratuitamente, do Paraná e de outros estados do Brasil, com mais de oito mil
-                exemplares distribuídos no Brasil, EUA e Portugal.
+                Fundador da Editora <RoughUnderline>A Gralha</RoughUnderline> Cultural, em janeiro
+                de 2021, é também o idealizador e criador do primeiro jornal 100% cultural do Norte
+                Pioneiro, <RoughUnderline>A Gralha</RoughUnderline>, lançado em abril de 2021. O
+                Jornal Cultural <RoughUnderline>A Gralha</RoughUnderline> já contemplou mais de 400
+                artistas gratuitamente, do Paraná e de outros estados do Brasil, com mais de oito
+                mil exemplares distribuídos no Brasil, EUA e Portugal.
               </p>
               <p>
                 Também é editor-chefe do Jornal Acontece e tem uma coluna semanal no JCN Jornal

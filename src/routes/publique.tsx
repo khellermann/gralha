@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Camera, FileText, Mail, Palette, Send, Sparkles } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { Camera, FileText, Mail, Palette, Send, Sparkles } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { absoluteUrl, createSeo, jsonLd } from "@/lib/seo";
@@ -69,14 +69,7 @@ function PublishPage() {
       <main className="flex-1">
         <section className="border-b border-ink/15 bg-hero-gradient">
           <div className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" /> Voltar para a home
-            </Link>
-
-            <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-center">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-center">
               <div>
                 <p className="text-xs uppercase tracking-[0.35em] text-primary">
                   Chamada para artistas

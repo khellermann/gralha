@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { RoughUnderline } from "@/components/RoughUnderline";
 import { absoluteUrl, createSeo, jsonLd } from "@/lib/seo";
 
 const milestones = [
@@ -23,9 +24,9 @@ const milestones = [
 
 export const Route = createFileRoute("/jornal")({
   head: () => {
-    const title = "Jornal Cultural Agralha - A arte que venceu o isolamento";
+    const title = "Jornal Cultural A Gralha - A arte que venceu o isolamento";
     const description =
-      "Conheça a história do Jornal Cultural Agralha, nascido durante a pandemia para manter a arte viva, gratuita e acessível.";
+      "Conheça a história do Jornal Cultural A Gralha, nascido durante a pandemia para manter a arte viva, gratuita e acessível.";
     const seo = createSeo({
       title,
       description,
@@ -64,20 +65,14 @@ function JornalPage() {
       <Header />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:py-14">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
-        >
-          <span aria-hidden="true">←</span> Voltar para a home
-        </Link>
-
-        <article className="mt-8 border-y-4 border-double border-ink/70 py-6 sm:py-8">
+        <article className="border-y-4 border-double border-ink/70 py-6 sm:py-8">
           <header className="text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.38em] text-primary">
               História do jornal
             </p>
             <h1 className="mx-auto mt-4 max-w-5xl text-serif text-4xl font-black leading-none text-ink sm:text-6xl lg:text-7xl">
-              Jornal Cultural Agralha: a arte que venceu o isolamento
+              Jornal Cultural <RoughUnderline>A Gralha</RoughUnderline>: a arte que venceu o
+              isolamento
             </h1>
             <div className="mx-auto mt-5 h-px max-w-3xl bg-ink/30" />
             <p className="mx-auto mt-5 max-w-3xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
@@ -116,10 +111,11 @@ function JornalPage() {
           <section className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
             <div className="max-w-none text-[16px] leading-7 text-ink sm:text-justify lg:columns-2 lg:gap-10 [&_p]:mb-4">
               <p className="first-letter:float-left first-letter:mr-3 first-letter:text-7xl first-letter:font-black first-letter:leading-[0.85] first-letter:text-primary">
-                O Jornal Cultural Agralha nasceu em um dos períodos mais difíceis da história
-                recente da humanidade: a pandemia da Covid-19. Diante do isolamento social, do
-                fechamento dos espaços culturais e da impossibilidade de realizar eventos
-                presenciais, surgiu uma pergunta que parecia inevitável:{" "}
+                O Jornal Cultural <RoughUnderline>A Gralha</RoughUnderline> nasceu em um dos
+                períodos mais difíceis da história recente da humanidade: a pandemia da Covid-19.
+                Diante do isolamento social, do fechamento dos espaços culturais e da
+                impossibilidade de realizar eventos presenciais, surgiu uma pergunta que parecia
+                inevitável:{" "}
                 <em>
                   como continuar fazendo arte quando os artistas não podiam sequer sair de casa?
                 </em>
@@ -132,7 +128,10 @@ function JornalPage() {
                 espetáculos e inúmeras manifestações artísticas que buscavam manter viva a
                 esperança.
               </p>
-              <p>Foi nesse contexto que nasceu o Jornal Cultural Agralha.</p>
+              <p>
+                Foi nesse contexto que nasceu o Jornal Cultural{" "}
+                <RoughUnderline>A Gralha</RoughUnderline>.
+              </p>
               <p>
                 A proposta era simples e, ao mesmo tempo, ousada: permitir que a arte continuasse
                 caminhando livremente pelas ruas, mesmo quando os artistas precisavam permanecer em
@@ -141,23 +140,24 @@ function JornalPage() {
                 acessível.
               </p>
               <p>
-                Desde sua primeira edição, o Jornal Cultural Agralha abriu espaço para todas as
-                manifestações artísticas. Literatura, música, teatro, dança, circo, fotografia,
-                ilustração, cinema, artes visuais, entrevistas, documentários e tantas outras
-                expressões passaram a dividir as páginas de uma publicação dedicada exclusivamente à
-                cultura.
+                Desde sua primeira edição, o Jornal Cultural{" "}
+                <RoughUnderline>A Gralha</RoughUnderline> abriu espaço para todas as manifestações
+                artísticas. Literatura, música, teatro, dança, circo, fotografia, ilustração,
+                cinema, artes visuais, entrevistas, documentários e tantas outras expressões
+                passaram a dividir as páginas de uma publicação dedicada exclusivamente à cultura.
               </p>
               <p>
-                Hoje, o Agralha é o único jornal cultural da região Norte Pioneira do Paraná voltado
-                integralmente à divulgação da arte e dos artistas. Seu compromisso sempre foi o
-                mesmo: oferecer um espaço livre, sem custos para quem publica e sem qualquer tipo de
-                restrição de idade, experiência ou linguagem artística. Qualquer artista pode
-                participar. A única exigência é acreditar na força da cultura.
+                Hoje, <RoughUnderline>A Gralha</RoughUnderline> é o único jornal cultural da região
+                Norte Pioneira do Paraná voltado integralmente à divulgação da arte e dos artistas.
+                Seu compromisso sempre foi o mesmo: oferecer um espaço livre, sem custos para quem
+                publica e sem qualquer tipo de restrição de idade, experiência ou linguagem
+                artística. Qualquer artista pode participar. A única exigência é acreditar na força
+                da cultura.
               </p>
               <p>
-                Mais do que um jornal, o Agralha tornou-se um movimento de valorização artística.
-                Cada edição leva aos leitores uma diversidade de expressões culturais, aproximando
-                pessoas da arte de maneira simples e gratuita.
+                Mais do que um jornal, <RoughUnderline>A Gralha</RoughUnderline> tornou-se um
+                movimento de valorização artística. Cada edição leva aos leitores uma diversidade de
+                expressões culturais, aproximando pessoas da arte de maneira simples e gratuita.
               </p>
               <p>
                 Ao longo de sua trajetória, o projeto já ultrapassou dez edições, distribuiu mais de
@@ -167,10 +167,11 @@ function JornalPage() {
                 conhece limites geográficos.
               </p>
               <p>
-                O Jornal Cultural Agralha nasceu em um momento de crise, mas escolheu responder com
-                criatividade, sensibilidade e resistência. Sua história mostra que, mesmo diante do
-                isolamento, a arte nunca deixou de encontrar caminhos para alcançar as pessoas.
-                Afinal, quando tudo parecia parar, a cultura continuou seguindo em frente.
+                O Jornal Cultural <RoughUnderline>A Gralha</RoughUnderline> nasceu em um momento de
+                crise, mas escolheu responder com criatividade, sensibilidade e resistência. Sua
+                história mostra que, mesmo diante do isolamento, a arte nunca deixou de encontrar
+                caminhos para alcançar as pessoas. Afinal, quando tudo parecia parar, a cultura
+                continuou seguindo em frente.
               </p>
             </div>
 
@@ -182,8 +183,9 @@ function JornalPage() {
                 Quando tudo parecia parar, a cultura continuou seguindo em frente.
               </p>
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                O Agralha nasceu para preservar encontros, vozes e criações em um tempo de
-                distância. Cada página carrega essa escolha: fazer a arte circular.
+                <RoughUnderline>A Gralha</RoughUnderline> nasceu para preservar encontros, vozes e
+                criações em um tempo de distância. Cada página carrega essa escolha: fazer a arte
+                circular.
               </p>
             </aside>
           </section>

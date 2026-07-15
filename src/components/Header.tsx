@@ -13,11 +13,12 @@ import {
 } from "@/components/ui/sheet";
 
 const navItems = [
-  { to: "/jornal", label: "Jornal" },
-  { to: "/editor", label: "Editor" },
-  { to: "/mural", label: "Mural" },
-  { to: "/publique", label: "Publique" },
-  { to: "/acervo", label: "Acervo" },
+  { to: "/", label: "Home", exact: true },
+  { to: "/jornal", label: "Jornal", exact: false },
+  { to: "/editor", label: "Editor", exact: false },
+  { to: "/mural", label: "Mural", exact: false },
+  { to: "/publique", label: "Publique", exact: false },
+  { to: "/acervo", label: "Acervo", exact: false },
 ] as const;
 
 export function Header() {
@@ -72,6 +73,7 @@ export function Header() {
                     <Link
                       to={item.to}
                       className="border-b border-ink/10 px-1 py-4 text-sm font-bold uppercase tracking-[0.2em] text-ink/75 transition-colors hover:text-primary"
+                      activeOptions={item.exact ? { exact: true } : undefined}
                       activeProps={{
                         className: "border-primary text-primary",
                       }}
@@ -93,6 +95,7 @@ export function Header() {
               key={item.to}
               to={item.to}
               className="relative px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.22em] text-ink/70 transition-colors after:absolute after:inset-x-5 after:bottom-0 after:h-0.5 after:origin-center after:scale-x-0 after:bg-primary after:transition-transform hover:text-primary hover:after:scale-x-100"
+              activeOptions={item.exact ? { exact: true } : undefined}
               activeProps={{
                 className: "text-primary after:scale-x-100",
               }}

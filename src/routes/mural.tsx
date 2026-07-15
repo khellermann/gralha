@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Camera } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { Camera } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { MuralSection } from "@/components/MuralSection";
@@ -43,14 +43,7 @@ function MuralPage() {
       <Header />
 
       <main className="mx-auto max-w-6xl px-4 py-10 sm:py-14 w-full flex-1">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" /> Voltar para a home
-        </Link>
-
-        <header className="mt-8 border-b border-ink/15 pb-8 text-center">
+        <header className="border-b border-ink/15 pb-8 text-center">
           <p className="text-xs uppercase tracking-[0.35em] text-primary">Mural</p>
           <h1 className="mt-3 text-serif text-4xl sm:text-6xl font-black text-ink">
             Artistas com A Gralha
