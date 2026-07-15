@@ -7,7 +7,7 @@ import {
   createRootRouteWithContext,
   useRouter,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { jsonLd, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 import appCss from "../styles.css?url";
@@ -27,7 +27,9 @@ function NotFoundComponent() {
           <div className="grid gap-8 px-6 py-10 sm:px-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
             <div className="mx-auto w-full max-w-xs rotate-[-1deg] rounded-md border border-ink/20 bg-paper p-5 paper-shadow">
               <div className="rule-double py-3 text-center">
-                <p className="text-xs uppercase tracking-[0.35em] text-primary">Página perdida</p>
+                <p className="text-xs uppercase tracking-[0.35em] text-primary">
+                  <TypewriterText text="Página perdida" speed={45} />
+                </p>
                 <strong className="mt-3 block text-serif text-7xl font-black leading-none text-ink sm:text-8xl">
                   404
                 </strong>
@@ -40,13 +42,23 @@ function NotFoundComponent() {
             </div>
 
             <div className="text-center lg:text-left">
-              <p className="text-xs uppercase tracking-[0.35em] text-primary">Fora do acervo</p>
+              <p className="text-xs uppercase tracking-[0.35em] text-primary">
+                <TypewriterText text="Fora do acervo" delay={550} speed={48} />
+              </p>
               <h2 className="mt-3 text-serif text-3xl font-black leading-tight text-ink sm:text-5xl">
-                Esta página escapou da edição.
+                <TypewriterText
+                  text="Esta página escapou da edição."
+                  delay={950}
+                  speed={42}
+                  cursor
+                />
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base lg:mx-0">
-                O endereço pode ter mudado, sido arquivado ou simplesmente não existir. Você pode
-                voltar para a capa do jornal ou seguir direto para o acervo completo.
+                <TypewriterText
+                  text="O endereço pode ter mudado, sido arquivado ou simplesmente não existir. Você pode voltar para a capa do jornal ou seguir direto para o acervo completo."
+                  delay={2250}
+                  speed={18}
+                />
               </p>
 
               <div className="mt-7 flex flex-wrap justify-center gap-3 lg:justify-start">
@@ -70,6 +82,78 @@ function NotFoundComponent() {
     </div>
   );
 }
+
+function TypewriterText({
+  text,
+  delay = 0,
+  speed = 35,
+  cursor = false,
+}: {
+  text: string;
+  delay?: number;
+  speed?: number;
+  cursor?: boolean;
+}) {
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const [displayed, setDisplayed] = useState(prefersReducedMotion ? text : "");
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      setDisplayed(text);
+      return;
+    }
+
+    setDisplayed("");
+    let typingTimer: ReturnType<typeof window.setTimeout> | undefined;
+    const startTimer = window.setTimeout(() => {
+      let index = 0;
+
+      const typeNextCharacter = () => {
+        index += 1;
+        setDisplayed(text.slice(0, index));
+
+        if (index < text.length) {
+          typingTimer = window.setTimeout(typeNextCharacter, speed);
+        }
+      };
+
+      typeNextCharacter();
+    }, delay);
+
+    return () => {
+      window.clearTimeout(startTimer);
+      if (typingTimer) window.clearTimeout(typingTimer);
+    };
+  }, [delay, prefersReducedMotion, speed, text]);
+
+  return (
+    <span aria-label={text}>
+      <span aria-hidden="true">{displayed}</span>
+      {cursor && !prefersReducedMotion && (
+        <span aria-hidden="true" className="ml-1 inline-block animate-pulse text-primary">
+          |
+        </span>
+      )}
+    </span>
+  );
+}
+
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    updatePreference();
+    mediaQuery.addEventListener("change", updatePreference);
+
+    return () => mediaQuery.removeEventListener("change", updatePreference);
+  }, []);
+
+  return prefersReducedMotion;
+}
+
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   useEffect(() => {
