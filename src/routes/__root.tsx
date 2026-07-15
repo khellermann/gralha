@@ -23,12 +23,10 @@ function NotFoundComponent() {
 
     if (nextSoundEnabled) {
       await unlockTypewriterAudio();
-      playTypewriterSample();
-      playTypewriterTick(true);
       setReplayKey((current) => current + 1);
     } else {
+      stopTypewriterKeys();
       void typewriterAudioContext?.suspend().catch(() => undefined);
-      stopTypewriterSample();
     }
   }
 
@@ -47,7 +45,6 @@ function NotFoundComponent() {
               <button
                 type="button"
                 onClick={() => {
-                  if (soundEnabled) playTypewriterSample();
                   setReplayKey((current) => current + 1);
                 }}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/20 bg-card text-ink transition-colors hover:bg-ink hover:text-paper focus:outline-none focus:ring-2 focus:ring-ring"
@@ -179,7 +176,7 @@ function TypewriterText({
         setDisplayed(text.slice(0, index));
 
         if (soundEnabled && text[index - 1]?.trim()) {
-          playTypewriterTick();
+          playTypewriterKey();
         }
 
         if (index < text.length) {
@@ -213,7 +210,9 @@ type WindowWithWebkitAudio = Window & {
 };
 
 let typewriterAudioContext: AudioContext | null = null;
-let typewriterSample: HTMLAudioElement | null = null;
+let typewriterKeyBuffer: AudioBuffer | null = null;
+let typewriterKeyBufferPromise: Promise<void> | null = null;
+const activeTypewriterSources = new Set<AudioBufferSourceNode>();
 
 async function unlockTypewriterAudio() {
   if (typeof window === "undefined") return;
@@ -228,51 +227,75 @@ async function unlockTypewriterAudio() {
     await typewriterAudioContext.resume().catch(() => undefined);
   }
 
-  typewriterSample ??= new Audio("/typewriter.mp3");
-  typewriterSample.preload = "auto";
-  typewriterSample.volume = 0.55;
-  typewriterSample.load();
+  typewriterKeyBufferPromise ??= fetch("/typewriter.mp3")
+    .then((response) => response.arrayBuffer())
+    .then((buffer) => typewriterAudioContext?.decodeAudioData(buffer))
+    .then((buffer) => {
+      typewriterKeyBuffer = buffer ?? null;
+    })
+    .catch(() => {
+      typewriterKeyBuffer = null;
+    });
+
+  await typewriterKeyBufferPromise;
 }
 
-function playTypewriterSample() {
-  if (typeof window === "undefined") return;
-
-  typewriterSample ??= new Audio("/typewriter.mp3");
-  typewriterSample.volume = 0.55;
-  typewriterSample.currentTime = 0;
-  void typewriterSample.play().catch(() => undefined);
-}
-
-function stopTypewriterSample() {
-  if (!typewriterSample) return;
-
-  typewriterSample.pause();
-  typewriterSample.currentTime = 0;
-}
-
-function playTypewriterTick(stronger = false) {
+function playTypewriterKey() {
   const context = typewriterAudioContext;
   if (!context || context.state !== "running") return;
+
+  if (typewriterKeyBuffer) {
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+    const now = context.currentTime;
+    const duration = Math.min(0.065, typewriterKeyBuffer.duration);
+    const maxOffset = Math.max(0, typewriterKeyBuffer.duration - duration);
+    const offset = maxOffset > 0 ? Math.random() * maxOffset : 0;
+
+    source.buffer = typewriterKeyBuffer;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.22, now + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    source.connect(gain);
+    gain.connect(context.destination);
+    source.start(now, offset, duration);
+    source.stop(now + duration + 0.01);
+
+    activeTypewriterSources.add(source);
+    source.onended = () => activeTypewriterSources.delete(source);
+    return;
+  }
 
   const oscillator = context.createOscillator();
   const gain = context.createGain();
   const now = context.currentTime;
-  const volume = stronger ? 0.12 : 0.055;
-  const duration = stronger ? 0.075 : 0.045;
+  const duration = 0.045;
 
   oscillator.type = "square";
-  oscillator.frequency.setValueAtTime(stronger ? 720 : 650 + Math.random() * 260, now);
+  oscillator.frequency.setValueAtTime(650 + Math.random() * 260, now);
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(volume, now + 0.006);
+  gain.gain.exponentialRampToValueAtTime(0.04, now + 0.006);
   gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
   oscillator.connect(gain);
   gain.connect(context.destination);
   oscillator.start(now);
   oscillator.stop(now + duration + 0.01);
+}
 
-  if (stronger && "vibrate" in navigator) {
-    navigator.vibrate(18);
+function stopTypewriterKeys() {
+  activeTypewriterSources.forEach((source) => {
+    try {
+      source.stop();
+    } catch {
+      // Source may have already ended.
+    }
+  });
+  activeTypewriterSources.clear();
+
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    navigator.vibrate(0);
   }
 }
 
