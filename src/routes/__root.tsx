@@ -23,10 +23,12 @@ function NotFoundComponent() {
 
     if (nextSoundEnabled) {
       await unlockTypewriterAudio();
+      playTypewriterSample();
       playTypewriterTick(true);
       setReplayKey((current) => current + 1);
     } else {
       void typewriterAudioContext?.suspend().catch(() => undefined);
+      stopTypewriterSample();
     }
   }
 
@@ -44,7 +46,10 @@ function NotFoundComponent() {
             <div className="flex shrink-0 items-center gap-2">
               <button
                 type="button"
-                onClick={() => setReplayKey((current) => current + 1)}
+                onClick={() => {
+                  if (soundEnabled) playTypewriterSample();
+                  setReplayKey((current) => current + 1);
+                }}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/20 bg-card text-ink transition-colors hover:bg-ink hover:text-paper focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label="Repetir efeito de máquina de escrever"
                 title="Repetir efeito de máquina de escrever"
@@ -208,6 +213,7 @@ type WindowWithWebkitAudio = Window & {
 };
 
 let typewriterAudioContext: AudioContext | null = null;
+let typewriterSample: HTMLAudioElement | null = null;
 
 async function unlockTypewriterAudio() {
   if (typeof window === "undefined") return;
@@ -221,6 +227,27 @@ async function unlockTypewriterAudio() {
   if (typewriterAudioContext.state === "suspended") {
     await typewriterAudioContext.resume().catch(() => undefined);
   }
+
+  typewriterSample ??= new Audio("/typewriter.mp3");
+  typewriterSample.preload = "auto";
+  typewriterSample.volume = 0.55;
+  typewriterSample.load();
+}
+
+function playTypewriterSample() {
+  if (typeof window === "undefined") return;
+
+  typewriterSample ??= new Audio("/typewriter.mp3");
+  typewriterSample.volume = 0.55;
+  typewriterSample.currentTime = 0;
+  void typewriterSample.play().catch(() => undefined);
+}
+
+function stopTypewriterSample() {
+  if (!typewriterSample) return;
+
+  typewriterSample.pause();
+  typewriterSample.currentTime = 0;
 }
 
 function playTypewriterTick(stronger = false) {
