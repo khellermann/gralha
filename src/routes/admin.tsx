@@ -1133,12 +1133,12 @@ function MuralAdminSection({
     setBusy(true);
     setProgress(file ? "Enviando imagem..." : "Salvando publicação...");
 
-    let newImageUrl = editing?.imageUrl ?? "";
-    const oldImageUrl = editing?.imageUrl ?? "";
+    let newImagePath = editing?.imagePath ?? "";
+    const oldImagePath = editing?.imagePath ?? "";
 
     try {
       if (file) {
-        newImageUrl = await uploadMuralArtistImage(file, name);
+        newImagePath = await uploadMuralArtistImage(file, name);
       }
 
       const payload: MuralArtist = {
@@ -1146,7 +1146,8 @@ function MuralAdminSection({
         name,
         testimonial,
         artisticSegment,
-        imageUrl: newImageUrl,
+        imagePath: newImagePath,
+        imageUrl: editing?.imageUrl ?? "",
         imageAlt: imageAlt || `Foto de ${name}`,
         order: Number.parseInt(order, 10) || 0,
         status,
@@ -1167,11 +1168,11 @@ function MuralAdminSection({
       if (
         editing &&
         file &&
-        oldImageUrl &&
-        oldImageUrl !== newImageUrl &&
-        canDeleteSharedImage(oldImageUrl)
+        oldImagePath &&
+        oldImagePath !== newImagePath &&
+        canDeleteSharedImage(oldImagePath)
       ) {
-        await deleteMuralArtistImage(oldImageUrl);
+        await deleteMuralArtistImage(oldImagePath);
       }
 
       resetForm();
@@ -1181,8 +1182,8 @@ function MuralAdminSection({
       );
     } catch (error) {
       console.error(error);
-      if (file && newImageUrl && newImageUrl !== oldImageUrl) {
-        await deleteMuralArtistImage(newImageUrl).catch(() => undefined);
+      if (file && newImagePath && newImagePath !== oldImagePath) {
+        await deleteMuralArtistImage(newImagePath).catch(() => undefined);
       }
       void showError(
         error instanceof Error ? error.message : "Não foi possível salvar a publicação.",
@@ -1205,8 +1206,8 @@ function MuralAdminSection({
 
     try {
       await deleteMuralArtist(item.id);
-      if (canDeleteSharedImage(item.imageUrl)) {
-        await deleteMuralArtistImage(item.imageUrl);
+      if (canDeleteSharedImage(item.imagePath)) {
+        await deleteMuralArtistImage(item.imagePath);
       }
       await onChange();
       if (editing?.id === item.id) resetForm();
@@ -1216,11 +1217,8 @@ function MuralAdminSection({
     }
   }
 
-  function canDeleteSharedImage(imageUrl: string) {
-    return (
-      imageUrl.startsWith("/uploads/mural/") &&
-      artists.filter((item) => item.imageUrl === imageUrl).length <= 1
-    );
+  function canDeleteSharedImage(imagePath: string) {
+    return Boolean(imagePath) && artists.filter((item) => item.imagePath === imagePath).length <= 1;
   }
 
   return (

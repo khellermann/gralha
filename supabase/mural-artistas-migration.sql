@@ -54,3 +54,21 @@ for all
 to authenticated
 using (true)
 with check (true);
+
+insert into storage.buckets (id, name, public)
+values ('mural', 'mural', true)
+on conflict (id) do update set public = excluded.public;
+
+drop policy if exists "Public can read mural artist images" on storage.objects;
+create policy "Public can read mural artist images"
+on storage.objects
+for select
+using (bucket_id = 'mural');
+
+drop policy if exists "Authenticated editors can manage mural artist images" on storage.objects;
+create policy "Authenticated editors can manage mural artist images"
+on storage.objects
+for all
+to authenticated
+using (bucket_id = 'mural')
+with check (bucket_id = 'mural');

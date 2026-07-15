@@ -1,22 +1,14 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
+import { MURAL_BUCKET, supabase, supabaseAnonKey, supabaseUrl } from "@/lib/supabase";
 
 const MAX_UPLOAD_SIZE = 8 * 1024 * 1024;
 const MAX_IMAGE_SIDE = 1600;
-const PUBLIC_MURAL_PREFIX = "/uploads/mural/";
-const MURAL_UPLOAD_DIR = path.resolve(process.cwd(), "public", "uploads", "mural");
 
 type UploadResult = { ok: true; path: string } | { ok: false; status: number; message: string };
 
 export async function handleMuralUpload(request: Request): Promise<Response> {
   const auth = await requireAuthenticatedEditor(request);
   if (!auth.ok) return jsonResponse({ error: auth.message }, auth.status);
-
-  const hostingIssue = getLocalUploadHostingIssue();
-  if (hostingIssue) {
-    return jsonResponse({ error: hostingIssue }, 501);
-  }
 
   const contentLength = Number(request.headers.get("content-length") ?? 0);
   if (contentLength > MAX_UPLOAD_SIZE + 1024 * 1024) {
@@ -32,7 +24,7 @@ export async function handleMuralUpload(request: Request): Promise<Response> {
       return jsonResponse({ error: "Envie uma imagem." }, 400);
     }
 
-    const result = await saveMuralImage(file, artistName);
+    const result = await saveMuralImage(file, artistName, auth.token);
     if (!result.ok) return jsonResponse({ error: result.message }, result.status);
 
     return jsonResponse({ path: result.path }, 201);
@@ -50,14 +42,14 @@ export async function handleMuralFileDelete(request: Request): Promise<Response>
     const body = (await request.json()) as { path?: unknown };
     const publicPath = typeof body.path === "string" ? body.path : "";
 
-    if (!isAllowedMuralPublicPath(publicPath)) {
+    if (!isAllowedMuralStoragePath(publicPath)) {
       return jsonResponse({ error: "Caminho de imagem inválido." }, 400);
     }
 
-    const filePath = resolveMuralFilePath(publicPath);
-    if (!filePath) return jsonResponse({ error: "Caminho de imagem inválido." }, 400);
+    const client = createAuthenticatedSupabaseClient(auth.token);
+    const { error } = await client.storage.from(MURAL_BUCKET).remove([publicPath]);
+    if (error) throw error;
 
-    await rm(filePath, { force: true });
     return jsonResponse({ ok: true });
   } catch (error) {
     console.error(error);
@@ -65,7 +57,11 @@ export async function handleMuralFileDelete(request: Request): Promise<Response>
   }
 }
 
-async function saveMuralImage(file: File, artistName: string): Promise<UploadResult> {
+async function saveMuralImage(
+  file: File,
+  artistName: string,
+  token: string,
+): Promise<UploadResult> {
   if (!isAllowedMime(file.type)) {
     return { ok: false, status: 400, message: "Use imagem JPEG, PNG ou WebP." };
   }
@@ -88,8 +84,6 @@ async function saveMuralImage(file: File, artistName: string): Promise<UploadRes
     };
   }
 
-  await mkdir(MURAL_UPLOAD_DIR, { recursive: true });
-
   const { createCanvas, loadImage } = await import("@napi-rs/canvas");
   const image = await loadImage(bytes);
   const ratio = Math.min(1, MAX_IMAGE_SIDE / Math.max(image.width, image.height));
@@ -102,31 +96,21 @@ async function saveMuralImage(file: File, artistName: string): Promise<UploadRes
   const webp = await canvas.encode("webp", 82);
   const unique = crypto.randomUUID().slice(0, 6);
   const fileName = `${Date.now()}-${unique}-${artistName || "artista"}.webp`;
-  const filePath = path.join(MURAL_UPLOAD_DIR, fileName);
-  const resolved = path.resolve(filePath);
+  const storagePath = `${unique}/${fileName}`;
 
-  if (!isInsideDirectory(resolved, MURAL_UPLOAD_DIR)) {
+  if (!isAllowedMuralStoragePath(storagePath)) {
     return { ok: false, status: 400, message: "Nome de arquivo inválido." };
   }
 
-  await writeFile(resolved, webp, { flag: "wx" });
-  return { ok: true, path: `${PUBLIC_MURAL_PREFIX}${fileName}` };
-}
+  const client = createAuthenticatedSupabaseClient(token);
+  const { error } = await client.storage.from(MURAL_BUCKET).upload(storagePath, webp, {
+    cacheControl: "31536000",
+    contentType: "image/webp",
+    upsert: false,
+  });
 
-function getLocalUploadHostingIssue() {
-  const isVercel =
-    typeof process !== "undefined" &&
-    (process.env.VERCEL === "1" ||
-      process.env.VERCEL === "true" ||
-      process.env.NITRO_PRESET === "vercel");
-
-  if (!isVercel) return "";
-
-  return [
-    "O upload local em public/uploads/mural/ não é compatível com a hospedagem atual na Vercel.",
-    "A Vercel usa funções serverless com sistema de arquivos efêmero/sem persistência para esse tipo de gravação.",
-    "Para usar armazenamento local, publique em um servidor Node com disco persistente e permissão de escrita nessa pasta.",
-  ].join(" ");
+  if (error) throw error;
+  return { ok: true, path: storagePath };
 }
 
 function describeUploadError(error: unknown) {
@@ -136,7 +120,7 @@ function describeUploadError(error: unknown) {
     }
 
     if (["EROFS", "EACCES", "EPERM"].some((code) => error.message.includes(code))) {
-      return "O servidor não permitiu gravar em public/uploads/mural/. Verifique permissão de escrita e disco persistente.";
+      return "O servidor não permitiu processar a imagem temporariamente.";
     }
 
     if (error.message.toLowerCase().includes("image")) {
@@ -157,7 +141,7 @@ async function requireAuthenticatedEditor(request: Request) {
     return { ok: false as const, status: 401, message: "Sessão inválida ou expirada." };
   }
 
-  return { ok: true as const };
+  return { ok: true as const, token };
 }
 
 function isAllowedMime(type: string) {
@@ -196,23 +180,24 @@ function sanitizeFilePart(value: string) {
   return cleaned.slice(0, 60);
 }
 
-function isAllowedMuralPublicPath(publicPath: string) {
-  if (!publicPath.startsWith(PUBLIC_MURAL_PREFIX)) return false;
-  if (publicPath.includes("..") || publicPath.includes("\\") || publicPath.includes("\0"))
-    return false;
-  return /^\/uploads\/mural\/[a-zA-Z0-9._-]+$/.test(publicPath);
+function isAllowedMuralStoragePath(storagePath: string) {
+  if (!storagePath || storagePath.startsWith("/") || storagePath.includes("\0")) return false;
+  if (storagePath.includes("..") || storagePath.includes("\\")) return false;
+  return /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9._-]+\.webp$/.test(storagePath);
 }
 
-function resolveMuralFilePath(publicPath: string) {
-  if (!isAllowedMuralPublicPath(publicPath)) return null;
-  const fileName = publicPath.slice(PUBLIC_MURAL_PREFIX.length);
-  const resolved = path.resolve(MURAL_UPLOAD_DIR, fileName);
-  return isInsideDirectory(resolved, MURAL_UPLOAD_DIR) ? resolved : null;
-}
+function createAuthenticatedSupabaseClient(token: string) {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Supabase não está configurado.");
+  }
 
-function isInsideDirectory(filePath: string, directory: string) {
-  const relative = path.relative(directory, filePath);
-  return Boolean(relative) && !relative.startsWith("..") && !path.isAbsolute(relative);
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  });
 }
 
 function jsonResponse(body: unknown, status = 200) {

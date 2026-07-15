@@ -1,4 +1,4 @@
-import { EDITIONS_BUCKET, SPONSORS_BUCKET, supabase } from "@/lib/supabase";
+import { EDITIONS_BUCKET, MURAL_BUCKET, SPONSORS_BUCKET, supabase } from "@/lib/supabase";
 
 export interface Edition {
   id: string;
@@ -31,6 +31,7 @@ export interface MuralArtist {
   name: string;
   testimonial: string;
   artisticSegment: string;
+  imagePath: string;
   imageUrl: string;
   imageAlt: string;
   order: number;
@@ -114,7 +115,8 @@ function mapMuralArtist(row: MuralArtistRow): MuralArtist {
     name: row.nome,
     testimonial: row.depoimento,
     artisticSegment: row.segmento_artistico ?? "",
-    imageUrl: row.imagem_url,
+    imagePath: row.imagem_url,
+    imageUrl: getMuralArtistImageUrl(row.imagem_url),
     imageAlt: row.imagem_alt,
     order: row.ordem,
     status: row.status,
@@ -333,7 +335,7 @@ export async function saveMuralArtist(input: {
   name: string;
   testimonial: string;
   artisticSegment: string;
-  imageUrl: string;
+  imagePath: string;
   imageAlt: string;
   order: number;
   status: MuralStatus;
@@ -344,7 +346,7 @@ export async function saveMuralArtist(input: {
     nome: cleanText(input.name),
     depoimento: cleanText(input.testimonial),
     segmento_artistico: cleanText(input.artisticSegment) || null,
-    imagem_url: input.imageUrl,
+    imagem_url: input.imagePath,
     imagem_alt: cleanText(input.imageAlt),
     ordem: Number.isFinite(input.order) ? input.order : 0,
     status: input.status,
@@ -362,7 +364,7 @@ export async function updateMuralArtist(input: MuralArtist) {
       nome: cleanText(input.name),
       depoimento: cleanText(input.testimonial),
       segmento_artistico: cleanText(input.artisticSegment) || null,
-      imagem_url: input.imageUrl,
+      imagem_url: input.imagePath,
       imagem_alt: cleanText(input.imageAlt),
       ordem: Number.isFinite(input.order) ? input.order : 0,
       status: input.status,
@@ -402,8 +404,8 @@ export async function uploadMuralArtistImage(file: File, artistName: string): Pr
   return payload.path;
 }
 
-export async function deleteMuralArtistImage(imageUrl: string): Promise<void> {
-  if (!imageUrl.startsWith("/uploads/mural/")) return;
+export async function deleteMuralArtistImage(imagePath: string): Promise<void> {
+  if (!isMuralStoragePath(imagePath)) return;
   const token = await getAuthToken();
   const response = await fetch("/api/mural/file", {
     method: "DELETE",
@@ -411,13 +413,18 @@ export async function deleteMuralArtistImage(imageUrl: string): Promise<void> {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ path: imageUrl }),
+    body: JSON.stringify({ path: imagePath }),
   });
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => ({}))) as { error?: string };
     throw new Error(payload.error || "Não foi possível remover a imagem.");
   }
+}
+
+export function getMuralArtistImageUrl(imagePath: string): string {
+  if (/^https?:\/\//i.test(imagePath) || imagePath.startsWith("/")) return imagePath;
+  return supabase.storage.from(MURAL_BUCKET).getPublicUrl(imagePath).data.publicUrl;
 }
 
 export async function getAuthToken(): Promise<string> {
@@ -471,4 +478,8 @@ function cleanText(value: string) {
     .replace(/<[^>]*>/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function isMuralStoragePath(value: string) {
+  return /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9._-]+\.webp$/.test(value);
 }
