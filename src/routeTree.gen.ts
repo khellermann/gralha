@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as JornalRouteImport } from './routes/jornal'
 import { Route as EditorRouteImport } from './routes/editor'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AcervoRouteImport } from './routes/acervo'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EdicaoIdRouteImport } from './routes/edicao.$id'
 
+const JornalRoute = JornalRouteImport.update({
+  id: '/jornal',
+  path: '/jornal',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EditorRoute = EditorRouteImport.update({
   id: '/editor',
   path: '/editor',
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/acervo': typeof AcervoRoute
   '/admin': typeof AdminRoute
   '/editor': typeof EditorRoute
+  '/jornal': typeof JornalRoute
   '/edicao/$id': typeof EdicaoIdRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/acervo': typeof AcervoRoute
   '/admin': typeof AdminRoute
   '/editor': typeof EditorRoute
+  '/jornal': typeof JornalRoute
   '/edicao/$id': typeof EdicaoIdRoute
 }
 export interface FileRoutesById {
@@ -61,14 +69,22 @@ export interface FileRoutesById {
   '/acervo': typeof AcervoRoute
   '/admin': typeof AdminRoute
   '/editor': typeof EditorRoute
+  '/jornal': typeof JornalRoute
   '/edicao/$id': typeof EdicaoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/acervo' | '/admin' | '/editor' | '/edicao/$id'
+  fullPaths: '/' | '/acervo' | '/admin' | '/editor' | '/jornal' | '/edicao/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/acervo' | '/admin' | '/editor' | '/edicao/$id'
-  id: '__root__' | '/' | '/acervo' | '/admin' | '/editor' | '/edicao/$id'
+  to: '/' | '/acervo' | '/admin' | '/editor' | '/jornal' | '/edicao/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/acervo'
+    | '/admin'
+    | '/editor'
+    | '/jornal'
+    | '/edicao/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,11 +92,19 @@ export interface RootRouteChildren {
   AcervoRoute: typeof AcervoRoute
   AdminRoute: typeof AdminRoute
   EditorRoute: typeof EditorRoute
+  JornalRoute: typeof JornalRoute
   EdicaoIdRoute: typeof EdicaoIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/jornal': {
+      id: '/jornal'
+      path: '/jornal'
+      fullPath: '/jornal'
+      preLoaderRoute: typeof JornalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/editor': {
       id: '/editor'
       path: '/editor'
@@ -124,6 +148,7 @@ const rootRouteChildren: RootRouteChildren = {
   AcervoRoute: AcervoRoute,
   AdminRoute: AdminRoute,
   EditorRoute: EditorRoute,
+  JornalRoute: JornalRoute,
   EdicaoIdRoute: EdicaoIdRoute,
 }
 export const routeTree = rootRouteImport
