@@ -7,7 +7,7 @@ import {
   createRootRouteWithContext,
   useRouter,
 } from "@tanstack/react-router";
-import { Volume2, VolumeX } from "lucide-react";
+import { RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { jsonLd, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
@@ -38,23 +38,34 @@ function NotFoundComponent() {
               </p>
               <h1 className="mt-2 text-serif text-3xl font-black text-ink sm:text-5xl">A Gralha</h1>
             </div>
-            <button
-              type="button"
-              onClick={toggleSound}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-ink/20 bg-card text-ink transition-colors hover:bg-ink hover:text-paper focus:outline-none focus:ring-2 focus:ring-ring"
-              aria-label={
-                soundEnabled
-                  ? "Desativar som da máquina de escrever"
-                  : "Ativar som da máquina de escrever"
-              }
-              title={
-                soundEnabled
-                  ? "Desativar som da máquina de escrever"
-                  : "Ativar som da máquina de escrever"
-              }
-            >
-              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setReplayKey((current) => current + 1)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/20 bg-card text-ink transition-colors hover:bg-ink hover:text-paper focus:outline-none focus:ring-2 focus:ring-ring"
+                aria-label="Repetir efeito de máquina de escrever"
+                title="Repetir efeito de máquina de escrever"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={toggleSound}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/20 bg-card text-ink transition-colors hover:bg-ink hover:text-paper focus:outline-none focus:ring-2 focus:ring-ring"
+                aria-label={
+                  soundEnabled
+                    ? "Desativar som da máquina de escrever"
+                    : "Ativar som da máquina de escrever"
+                }
+                title={
+                  soundEnabled
+                    ? "Desativar som da máquina de escrever"
+                    : "Ativar som da máquina de escrever"
+                }
+              >
+                {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
 
           <div className="grid gap-8 px-6 py-10 sm:px-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
@@ -63,7 +74,7 @@ function NotFoundComponent() {
                 <p className="text-xs uppercase tracking-[0.35em] text-primary">
                   <TypewriterText
                     text="Página perdida"
-                    speed={45}
+                    speed={70}
                     soundEnabled={soundEnabled}
                     replayKey={replayKey}
                   />
@@ -83,8 +94,8 @@ function NotFoundComponent() {
               <p className="text-xs uppercase tracking-[0.35em] text-primary">
                 <TypewriterText
                   text="Fora do acervo"
-                  delay={550}
-                  speed={48}
+                  delay={700}
+                  speed={70}
                   soundEnabled={soundEnabled}
                   replayKey={replayKey}
                 />
@@ -92,8 +103,8 @@ function NotFoundComponent() {
               <h2 className="mt-3 text-serif text-3xl font-black leading-tight text-ink sm:text-5xl">
                 <TypewriterText
                   text="Esta página escapou da edição."
-                  delay={950}
-                  speed={42}
+                  delay={1300}
+                  speed={55}
                   cursor
                   soundEnabled={soundEnabled}
                   replayKey={replayKey}
@@ -102,8 +113,8 @@ function NotFoundComponent() {
               <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base lg:mx-0">
                 <TypewriterText
                   text="O endereço pode ter mudado, sido arquivado ou simplesmente não existir. Você pode voltar para a capa do jornal ou seguir direto para o acervo completo."
-                  delay={2250}
-                  speed={18}
+                  delay={3300}
+                  speed={24}
                   soundEnabled={soundEnabled}
                   replayKey={replayKey}
                 />
@@ -148,6 +159,7 @@ function TypewriterText({
 }) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const [displayed, setDisplayed] = useState(prefersReducedMotion ? text : "");
+  const isTyping = displayed.length < text.length;
 
   useEffect(() => {
     if (prefersReducedMotion) {
@@ -185,7 +197,7 @@ function TypewriterText({
   return (
     <span aria-label={text}>
       <span aria-hidden="true">{displayed}</span>
-      {cursor && !prefersReducedMotion && (
+      {(cursor || isTyping) && !prefersReducedMotion && (
         <span aria-hidden="true" className="ml-1 inline-block animate-pulse text-primary">
           |
         </span>
