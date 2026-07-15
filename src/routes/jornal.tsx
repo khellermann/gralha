@@ -90,7 +90,7 @@ function JornalPage() {
             <img
               src="/jornal-a-gralha.jfif"
               alt="Jornal Cultural A Gralha"
-              className="max-h-[520px] w-full object-cover"
+              className="max-h-[520px] w-full object-cover object-top"
             />
             <figcaption className="border-t border-ink/10 px-4 py-3 text-center text-xs uppercase tracking-[0.22em] text-muted-foreground">
               Cultura impressa, gratuita e em movimento
