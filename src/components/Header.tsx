@@ -33,6 +33,13 @@ export function Header() {
             Editor
           </Link>
           <Link
+            to="/mural"
+            className="text-ink/70 hover:text-primary transition-colors hidden sm:inline"
+            activeProps={{ className: "text-primary font-semibold" }}
+          >
+            Mural
+          </Link>
+          <Link
             to="/acervo"
             className="text-ink/70 hover:text-primary transition-colors hidden sm:inline"
             activeProps={{ className: "text-primary font-semibold" }}

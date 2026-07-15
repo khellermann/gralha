@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MuralRouteImport } from './routes/mural'
 import { Route as JornalRouteImport } from './routes/jornal'
 import { Route as EditorRouteImport } from './routes/editor'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -16,6 +17,11 @@ import { Route as AcervoRouteImport } from './routes/acervo'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EdicaoIdRouteImport } from './routes/edicao.$id'
 
+const MuralRoute = MuralRouteImport.update({
+  id: '/mural',
+  path: '/mural',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JornalRoute = JornalRouteImport.update({
   id: '/jornal',
   path: '/jornal',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/editor': typeof EditorRoute
   '/jornal': typeof JornalRoute
+  '/mural': typeof MuralRoute
   '/edicao/$id': typeof EdicaoIdRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/editor': typeof EditorRoute
   '/jornal': typeof JornalRoute
+  '/mural': typeof MuralRoute
   '/edicao/$id': typeof EdicaoIdRoute
 }
 export interface FileRoutesById {
@@ -70,13 +78,28 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/editor': typeof EditorRoute
   '/jornal': typeof JornalRoute
+  '/mural': typeof MuralRoute
   '/edicao/$id': typeof EdicaoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/acervo' | '/admin' | '/editor' | '/jornal' | '/edicao/$id'
+  fullPaths:
+    | '/'
+    | '/acervo'
+    | '/admin'
+    | '/editor'
+    | '/jornal'
+    | '/mural'
+    | '/edicao/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/acervo' | '/admin' | '/editor' | '/jornal' | '/edicao/$id'
+  to:
+    | '/'
+    | '/acervo'
+    | '/admin'
+    | '/editor'
+    | '/jornal'
+    | '/mural'
+    | '/edicao/$id'
   id:
     | '__root__'
     | '/'
@@ -84,6 +107,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/editor'
     | '/jornal'
+    | '/mural'
     | '/edicao/$id'
   fileRoutesById: FileRoutesById
 }
@@ -93,11 +117,19 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   EditorRoute: typeof EditorRoute
   JornalRoute: typeof JornalRoute
+  MuralRoute: typeof MuralRoute
   EdicaoIdRoute: typeof EdicaoIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/mural': {
+      id: '/mural'
+      path: '/mural'
+      fullPath: '/mural'
+      preLoaderRoute: typeof MuralRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/jornal': {
       id: '/jornal'
       path: '/jornal'
@@ -149,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   EditorRoute: EditorRoute,
   JornalRoute: JornalRoute,
+  MuralRoute: MuralRoute,
   EdicaoIdRoute: EdicaoIdRoute,
 }
 export const routeTree = rootRouteImport

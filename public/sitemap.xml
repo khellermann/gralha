@@ -16,6 +16,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://gralha.vercel.app/mural</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://gralha.vercel.app/editor</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

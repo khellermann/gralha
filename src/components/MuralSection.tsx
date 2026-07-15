@@ -65,7 +65,7 @@ export function MuralSection() {
             </span>
           )}
           <span className="mt-3 line-clamp-4 text-sm leading-6 text-ink/75">
-            “{item.testimonial}”
+            &ldquo;{item.testimonial}&rdquo;
           </span>
         </button>
       ))}
@@ -90,7 +90,7 @@ async function openMuralModal(item: MuralArtist) {
             ? `<p class="text-xs font-semibold uppercase tracking-[0.22em] text-[#1f7a4d]">${escapeHtml(item.artisticSegment)}</p>`
             : ""
         }
-        <p class="text-base leading-7 text-[#2f2a22]">“${escapeHtml(item.testimonial)}”</p>
+        <p class="text-base leading-7 text-[#2f2a22]">&ldquo;${escapeHtml(item.testimonial)}&rdquo;</p>
       </div>
     `,
     confirmButtonText: "Fechar",
