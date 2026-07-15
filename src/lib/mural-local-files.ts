@@ -1,6 +1,5 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { supabase } from "@/lib/supabase";
 
 const MAX_UPLOAD_SIZE = 8 * 1024 * 1024;
@@ -13,6 +12,11 @@ type UploadResult = { ok: true; path: string } | { ok: false; status: number; me
 export async function handleMuralUpload(request: Request): Promise<Response> {
   const auth = await requireAuthenticatedEditor(request);
   if (!auth.ok) return jsonResponse({ error: auth.message }, auth.status);
+
+  const hostingIssue = getLocalUploadHostingIssue();
+  if (hostingIssue) {
+    return jsonResponse({ error: hostingIssue }, 501);
+  }
 
   const contentLength = Number(request.headers.get("content-length") ?? 0);
   if (contentLength > MAX_UPLOAD_SIZE + 1024 * 1024) {
@@ -34,7 +38,7 @@ export async function handleMuralUpload(request: Request): Promise<Response> {
     return jsonResponse({ path: result.path }, 201);
   } catch (error) {
     console.error(error);
-    return jsonResponse({ error: "Não foi possível processar a imagem." }, 500);
+    return jsonResponse({ error: describeUploadError(error) }, 500);
   }
 }
 
@@ -86,6 +90,7 @@ async function saveMuralImage(file: File, artistName: string): Promise<UploadRes
 
   await mkdir(MURAL_UPLOAD_DIR, { recursive: true });
 
+  const { createCanvas, loadImage } = await import("@napi-rs/canvas");
   const image = await loadImage(bytes);
   const ratio = Math.min(1, MAX_IMAGE_SIDE / Math.max(image.width, image.height));
   const width = Math.max(1, Math.round(image.width * ratio));
@@ -106,6 +111,40 @@ async function saveMuralImage(file: File, artistName: string): Promise<UploadRes
 
   await writeFile(resolved, webp, { flag: "wx" });
   return { ok: true, path: `${PUBLIC_MURAL_PREFIX}${fileName}` };
+}
+
+function getLocalUploadHostingIssue() {
+  const isVercel =
+    typeof process !== "undefined" &&
+    (process.env.VERCEL === "1" ||
+      process.env.VERCEL === "true" ||
+      process.env.NITRO_PRESET === "vercel");
+
+  if (!isVercel) return "";
+
+  return [
+    "O upload local em public/uploads/mural/ não é compatível com a hospedagem atual na Vercel.",
+    "A Vercel usa funções serverless com sistema de arquivos efêmero/sem persistência para esse tipo de gravação.",
+    "Para usar armazenamento local, publique em um servidor Node com disco persistente e permissão de escrita nessa pasta.",
+  ].join(" ");
+}
+
+function describeUploadError(error: unknown) {
+  if (error instanceof Error) {
+    if (error.message.includes("@napi-rs/canvas")) {
+      return "Não foi possível carregar o processador de imagem no servidor atual.";
+    }
+
+    if (["EROFS", "EACCES", "EPERM"].some((code) => error.message.includes(code))) {
+      return "O servidor não permitiu gravar em public/uploads/mural/. Verifique permissão de escrita e disco persistente.";
+    }
+
+    if (error.message.toLowerCase().includes("image")) {
+      return "Não foi possível ler a imagem enviada. Tente JPG, PNG ou WebP válido.";
+    }
+  }
+
+  return "Não foi possível processar a imagem.";
 }
 
 async function requireAuthenticatedEditor(request: Request) {
