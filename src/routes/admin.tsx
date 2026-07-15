@@ -8,6 +8,7 @@ import {
   Edit3,
   ExternalLink,
   Feather,
+  MessageSquareText,
   ImageIcon,
   LayoutDashboard,
   Loader2,
@@ -22,22 +23,30 @@ import { Header } from "@/components/Header";
 import { getPdfPageCount } from "@/lib/pdf";
 import {
   deleteEdition,
+  deleteMuralArtist,
+  deleteMuralArtistImage,
   deleteSponsor,
   getEditions,
+  getMuralArtists,
   getSponsors,
   isAuthed,
   onAuthChange,
   saveEdition,
+  saveMuralArtist,
   saveSponsor,
   signIn,
   signOut,
   uid,
   updateEdition,
+  updateMuralArtist,
   updateSponsor,
   uploadEditionCoverImage,
   uploadEditionPdf,
+  uploadMuralArtistImage,
   uploadSponsorImage,
   type Edition,
+  type MuralArtist,
+  type MuralStatus,
   type Sponsor,
 } from "@/lib/store";
 import "sweetalert2/dist/sweetalert2.min.css";
@@ -153,15 +162,23 @@ function LoginForm() {
 function Dashboard() {
   const [editions, setEditions] = useState<Edition[]>([]);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
-  const [activePanel, setActivePanel] = useState<"overview" | "editions" | "sponsors">("overview");
+  const [muralArtists, setMuralArtists] = useState<MuralArtist[]>([]);
+  const [activePanel, setActivePanel] = useState<"overview" | "editions" | "sponsors" | "mural">(
+    "overview",
+  );
   const [loading, setLoading] = useState(true);
 
   async function load() {
     setLoading(true);
     try {
-      const [editionRows, sponsorRows] = await Promise.all([getEditions(), getSponsors()]);
+      const [editionRows, sponsorRows, muralRows] = await Promise.all([
+        getEditions(),
+        getSponsors(),
+        getMuralArtists(),
+      ]);
       setEditions(editionRows);
       setSponsors(sponsorRows);
+      setMuralArtists(muralRows);
     } finally {
       setLoading(false);
     }
@@ -188,7 +205,7 @@ function Dashboard() {
 
       {loading && <div className="text-sm text-muted-foreground">Carregando dados...</div>}
 
-      <DashboardStats editions={editions} sponsors={sponsors} />
+      <DashboardStats editions={editions} sponsors={sponsors} muralArtists={muralArtists} />
 
       <div className="flex flex-wrap gap-2 rounded-xl border border-ink/15 bg-card p-2 paper-shadow">
         <PanelButton
@@ -209,26 +226,47 @@ function Dashboard() {
           label="Gerenciar patrocinadores"
           onClick={() => setActivePanel("sponsors")}
         />
+        <PanelButton
+          active={activePanel === "mural"}
+          icon={<MessageSquareText className="h-4 w-4" />}
+          label="Mural de Artistas"
+          onClick={() => setActivePanel("mural")}
+        />
       </div>
 
       {activePanel === "overview" && (
         <DashboardOverview
           editions={editions}
           sponsors={sponsors}
+          muralArtists={muralArtists}
           onManageEditions={() => setActivePanel("editions")}
           onManageSponsors={() => setActivePanel("sponsors")}
+          onManageMural={() => setActivePanel("mural")}
         />
       )}
 
       {activePanel === "editions" && <EditionsSection editions={editions} onChange={load} />}
 
       {activePanel === "sponsors" && <SponsorsSection sponsors={sponsors} onChange={load} />}
+
+      {activePanel === "mural" && <MuralAdminSection artists={muralArtists} onChange={load} />}
     </div>
   );
 }
 
-function DashboardStats({ editions, sponsors }: { editions: Edition[]; sponsors: Sponsor[] }) {
+function DashboardStats({
+  editions,
+  sponsors,
+  muralArtists,
+}: {
+  editions: Edition[];
+  sponsors: Sponsor[];
+  muralArtists: MuralArtist[];
+}) {
   const activeSponsors = sponsors.filter((s) => s.active).length;
+  const publishedMural = muralArtists.filter(
+    (item) => item.status === "published" && item.active,
+  ).length;
   const latestEdition = editions[0];
   const totalPages = editions.reduce((sum, edition) => sum + edition.pageCount, 0);
 
@@ -254,9 +292,9 @@ function DashboardStats({ editions, sponsors }: { editions: Edition[]; sponsors:
       />
       <StatCard
         icon={<BarChart3 className="h-5 w-5" />}
-        label="Status do apoio"
-        value={sponsors.length ? `${Math.round((activeSponsors / sponsors.length) * 100)}%` : "0%"}
-        detail="Patrocinadores visíveis no site"
+        label="Mural publicado"
+        value={String(publishedMural)}
+        detail={`${muralArtists.length} depoimentos cadastrados`}
       />
     </div>
   );
@@ -265,16 +303,21 @@ function DashboardStats({ editions, sponsors }: { editions: Edition[]; sponsors:
 function DashboardOverview({
   editions,
   sponsors,
+  muralArtists,
   onManageEditions,
   onManageSponsors,
+  onManageMural,
 }: {
   editions: Edition[];
   sponsors: Sponsor[];
+  muralArtists: MuralArtist[];
   onManageEditions: () => void;
   onManageSponsors: () => void;
+  onManageMural: () => void;
 }) {
   const recentEditions = editions.slice(0, 4);
   const recentSponsors = sponsors.slice(-4).reverse();
+  const recentMural = muralArtists.slice(0, 3);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
@@ -309,8 +352,8 @@ function DashboardOverview({
                   Nº {edition.number} - {edition.title}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(edition.publishedAt).toLocaleDateString("pt-BR")} ·{" "}
-                  {edition.pageCount} pág.
+                  {new Date(edition.publishedAt).toLocaleDateString("pt-BR")} · {edition.pageCount}{" "}
+                  pág.
                 </p>
               </div>
               <BookOpen className="h-4 w-4 shrink-0 text-primary" />
@@ -353,12 +396,43 @@ function DashboardOverview({
               </div>
               <span
                 className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${
-                  sponsor.active
-                    ? "bg-primary/15 text-primary"
-                    : "bg-muted text-muted-foreground"
+                  sponsor.active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
                 }`}
               >
                 {sponsor.active ? "Ativo" : "Inativo"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="rounded-xl border border-ink/15 bg-card paper-shadow p-6 lg:col-span-2">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-primary">Mural</p>
+            <h2 className="text-serif text-2xl font-black text-ink">Mural de Artistas</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onManageMural}
+            className="inline-flex items-center gap-2 rounded-md border border-ink/20 px-3 py-2 text-xs font-semibold text-ink transition hover:bg-ink hover:text-paper"
+          >
+            <MessageSquareText className="h-4 w-4" /> Gerenciar
+          </button>
+        </div>
+
+        <ul className="mt-5 grid gap-3 md:grid-cols-3">
+          {recentMural.length === 0 && (
+            <li className="rounded-md border border-dashed border-ink/20 bg-paper p-4 text-sm text-muted-foreground md:col-span-3">
+              Nenhum depoimento cadastrado.
+            </li>
+          )}
+          {recentMural.map((item) => (
+            <li key={item.id} className="rounded-md border border-ink/10 bg-paper px-4 py-3">
+              <p className="font-semibold text-ink truncate">{item.name}</p>
+              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.testimonial}</p>
+              <span className="mt-3 inline-flex rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                {item.status === "published" ? "Publicado" : "Rascunho"}
               </span>
             </li>
           ))}
@@ -708,18 +782,23 @@ function EditionsSection({
               >
                 <ImageIcon className="h-4 w-4" />
               </button>
-            <button
-              onClick={async () => {
-                if (await confirmAction("Excluir esta edição?", "Esta ação remove o PDF e não pode ser desfeita.")) {
-                  await deleteEdition(e);
-                  await onChange();
-                }
-              }}
-              className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition"
-              aria-label="Excluir"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+              <button
+                onClick={async () => {
+                  if (
+                    await confirmAction(
+                      "Excluir esta edição?",
+                      "Esta ação remove o PDF e não pode ser desfeita.",
+                    )
+                  ) {
+                    await deleteEdition(e);
+                    await onChange();
+                  }
+                }}
+                className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition"
+                aria-label="Excluir"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
             </div>
           </li>
         ))}
@@ -823,8 +902,9 @@ function SponsorsSection({
           url: getModalInputValue("sponsor-url"),
           whatsapp: getModalInputValue("sponsor-whatsapp"),
           address: getModalInputValue("sponsor-address"),
-          active: Boolean((document.getElementById("sponsor-active") as HTMLInputElement | null)
-            ?.checked),
+          active: Boolean(
+            (document.getElementById("sponsor-active") as HTMLInputElement | null)?.checked,
+          ),
         };
       },
     });
@@ -898,8 +978,8 @@ function SponsorsSection({
             required
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            Use uma imagem horizontal, de preferência 1200x600px, em PNG ou JPG. O site
-            exibirá todos os logos no mesmo tamanho visual, sem cortar a imagem.
+            Use uma imagem horizontal, de preferência 1200x600px, em PNG ou JPG. O site exibirá
+            todos os logos no mesmo tamanho visual, sem cortar a imagem.
           </p>
         </Field>
         <button
@@ -960,7 +1040,12 @@ function SponsorsSection({
               </button>
               <button
                 onClick={async () => {
-                  if (await confirmAction("Excluir patrocinador?", "Esta ação remove o cadastro e a imagem enviada.")) {
+                  if (
+                    await confirmAction(
+                      "Excluir patrocinador?",
+                      "Esta ação remove o cadastro e a imagem enviada.",
+                    )
+                  ) {
                     await deleteSponsor(s);
                     await onChange();
                   }
@@ -976,6 +1061,451 @@ function SponsorsSection({
       </ul>
     </section>
   );
+}
+
+function MuralAdminSection({
+  artists,
+  onChange,
+}: {
+  artists: MuralArtist[];
+  onChange: () => Promise<void>;
+}) {
+  const [editing, setEditing] = useState<MuralArtist | null>(null);
+  const [name, setName] = useState("");
+  const [testimonial, setTestimonial] = useState("");
+  const [artisticSegment, setArtisticSegment] = useState("");
+  const [imageAlt, setImageAlt] = useState("");
+  const [order, setOrder] = useState("0");
+  const [status, setStatus] = useState<MuralStatus>("draft");
+  const [active, setActive] = useState(true);
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState("");
+
+  function resetForm() {
+    setEditing(null);
+    setName("");
+    setTestimonial("");
+    setArtisticSegment("");
+    setImageAlt("");
+    setOrder("0");
+    setStatus("draft");
+    setActive(true);
+    setFile(null);
+    setPreviewUrl("");
+    const input = document.getElementById("mural-file") as HTMLInputElement | null;
+    if (input) input.value = "";
+  }
+
+  function startEdit(item: MuralArtist) {
+    setEditing(item);
+    setName(item.name);
+    setTestimonial(item.testimonial);
+    setArtisticSegment(item.artisticSegment);
+    setImageAlt(item.imageAlt);
+    setOrder(String(item.order));
+    setStatus(item.status);
+    setActive(item.active);
+    setFile(null);
+    setPreviewUrl(item.imageUrl);
+    const input = document.getElementById("mural-file") as HTMLInputElement | null;
+    if (input) input.value = "";
+  }
+
+  function chooseFile(nextFile: File | null) {
+    setFile(nextFile);
+    if (!nextFile) {
+      setPreviewUrl(editing?.imageUrl ?? "");
+      return;
+    }
+    setPreviewUrl(URL.createObjectURL(nextFile));
+  }
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+
+    if (!editing && !file) {
+      void showError("Envie uma foto para o mural.");
+      return;
+    }
+
+    setBusy(true);
+    setProgress(file ? "Enviando imagem..." : "Salvando publicação...");
+
+    let newImageUrl = editing?.imageUrl ?? "";
+    const oldImageUrl = editing?.imageUrl ?? "";
+
+    try {
+      if (file) {
+        newImageUrl = await uploadMuralArtistImage(file, name);
+      }
+
+      const payload: MuralArtist = {
+        id: editing?.id ?? uid(),
+        name,
+        testimonial,
+        artisticSegment,
+        imageUrl: newImageUrl,
+        imageAlt: imageAlt || `Foto de ${name}`,
+        order: Number.parseInt(order, 10) || 0,
+        status,
+        active,
+        createdAt: editing?.createdAt ?? new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        publishedAt: editing?.publishedAt ?? null,
+      };
+
+      setProgress(editing ? "Atualizando registro..." : "Salvando registro...");
+
+      if (editing) {
+        await updateMuralArtist(payload);
+      } else {
+        await saveMuralArtist(payload);
+      }
+
+      if (
+        editing &&
+        file &&
+        oldImageUrl &&
+        oldImageUrl !== newImageUrl &&
+        canDeleteSharedImage(oldImageUrl)
+      ) {
+        await deleteMuralArtistImage(oldImageUrl);
+      }
+
+      resetForm();
+      await onChange();
+      await showSuccess(
+        editing ? "Publicação atualizada com sucesso." : "Publicação criada com sucesso.",
+      );
+    } catch (error) {
+      console.error(error);
+      if (file && newImageUrl && newImageUrl !== oldImageUrl) {
+        await deleteMuralArtistImage(newImageUrl).catch(() => undefined);
+      }
+      void showError(
+        error instanceof Error ? error.message : "Não foi possível salvar a publicação.",
+      );
+    } finally {
+      setBusy(false);
+      setProgress("");
+    }
+  }
+
+  async function removeItem(item: MuralArtist) {
+    if (
+      !(await confirmAction(
+        "Excluir publicação do mural?",
+        "Esta ação remove o registro e a imagem enviada.",
+      ))
+    ) {
+      return;
+    }
+
+    try {
+      await deleteMuralArtist(item.id);
+      if (canDeleteSharedImage(item.imageUrl)) {
+        await deleteMuralArtistImage(item.imageUrl);
+      }
+      await onChange();
+      if (editing?.id === item.id) resetForm();
+    } catch (error) {
+      console.error(error);
+      void showError("Não foi possível excluir a publicação.");
+    }
+  }
+
+  function canDeleteSharedImage(imageUrl: string) {
+    return (
+      imageUrl.startsWith("/uploads/mural/") &&
+      artists.filter((item) => item.imageUrl === imageUrl).length <= 1
+    );
+  }
+
+  return (
+    <section className="rounded-xl border border-ink/15 bg-card paper-shadow p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-primary">Mural</p>
+          <h2 className="text-serif text-2xl font-black text-ink flex items-center gap-2">
+            <MessageSquareText className="h-5 w-5 text-primary" /> Mural de Artistas
+          </h2>
+        </div>
+        {editing && (
+          <button
+            type="button"
+            onClick={resetForm}
+            className="rounded-md border border-ink/20 px-3 py-2 text-xs font-semibold text-ink transition hover:bg-ink hover:text-paper"
+          >
+            Cancelar edição
+          </button>
+        )}
+      </div>
+
+      <form onSubmit={submit} className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Nome do artista">
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full rounded-md border border-input bg-paper px-3 py-2 text-sm"
+                required
+              />
+            </Field>
+            <Field label="Segmento artístico (opcional)">
+              <input
+                value={artisticSegment}
+                onChange={(e) => setArtisticSegment(e.target.value)}
+                className="w-full rounded-md border border-input bg-paper px-3 py-2 text-sm"
+              />
+            </Field>
+          </div>
+
+          <Field label="Depoimento">
+            <textarea
+              value={testimonial}
+              onChange={(e) => setTestimonial(e.target.value)}
+              className="min-h-32 w-full rounded-md border border-input bg-paper px-3 py-2 text-sm leading-6"
+              required
+            />
+          </Field>
+
+          <Field label="Texto alternativo da imagem">
+            <input
+              value={imageAlt}
+              onChange={(e) => setImageAlt(e.target.value)}
+              placeholder="Ex: Maria Silva segurando o Jornal A Gralha"
+              className="w-full rounded-md border border-input bg-paper px-3 py-2 text-sm"
+              required
+            />
+          </Field>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="Ordem">
+              <input
+                type="number"
+                value={order}
+                onChange={(e) => setOrder(e.target.value)}
+                className="w-full rounded-md border border-input bg-paper px-3 py-2 text-sm"
+              />
+            </Field>
+            <Field label="Status">
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as MuralStatus)}
+                className="w-full rounded-md border border-input bg-paper px-3 py-2 text-sm"
+              >
+                <option value="draft">Rascunho</option>
+                <option value="published">Publicado</option>
+              </select>
+            </Field>
+            <Field label="Situação">
+              <label className="flex h-10 items-center gap-2 rounded-md border border-input bg-paper px-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={(e) => setActive(e.target.checked)}
+                  className="accent-primary"
+                />
+                Ativo
+              </label>
+            </Field>
+          </div>
+
+          <Field label={editing ? "Substituir imagem (opcional)" : "Foto do artista"}>
+            <input
+              id="mural-file"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(e) => chooseFile(e.target.files?.[0] ?? null)}
+              className="w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-paper file:cursor-pointer"
+              required={!editing}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              JPG, PNG ou WebP até 8 MB. O servidor converte para WebP e redimensiona imagens
+              grandes.
+            </p>
+          </Field>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="submit"
+              disabled={busy}
+              className="inline-flex items-center gap-2 rounded-md bg-gralha-gradient px-5 py-2.5 text-sm font-semibold text-primary-foreground paper-shadow hover:brightness-110 transition disabled:opacity-60"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              {busy
+                ? progress || "Salvando..."
+                : editing
+                  ? "Salvar alterações"
+                  : "Cadastrar publicação"}
+            </button>
+            {previewUrl && (
+              <button
+                type="button"
+                onClick={() =>
+                  void previewMuralItem({
+                    name,
+                    testimonial,
+                    artisticSegment,
+                    imageUrl: previewUrl,
+                    imageAlt: imageAlt || `Foto de ${name}`,
+                  })
+                }
+                className="inline-flex items-center gap-2 rounded-md border border-ink/20 px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-ink hover:text-paper"
+              >
+                <ImageIcon className="h-4 w-4" /> Prévia
+              </button>
+            )}
+          </div>
+        </div>
+
+        <aside className="rounded-md border border-ink/10 bg-paper p-3">
+          {previewUrl ? (
+            <div className="bg-white p-3 pb-5 shadow-md rotate-[-1deg]">
+              <img
+                src={previewUrl}
+                alt={imageAlt || name}
+                className="aspect-[4/3] w-full object-cover"
+              />
+              <p className="mt-3 text-serif text-xl font-black text-ink">
+                {name || "Nome do artista"}
+              </p>
+              <p className="mt-1 line-clamp-4 text-sm text-ink/70">
+                {testimonial || "Depoimento do artista..."}
+              </p>
+            </div>
+          ) : (
+            <div className="grid aspect-[4/5] place-items-center rounded-md border border-dashed border-ink/20 text-center text-sm text-muted-foreground">
+              Pré-visualização da Polaroid
+            </div>
+          )}
+        </aside>
+      </form>
+
+      <h3 className="mt-8 mb-3 text-serif text-xl font-bold text-ink">Publicações</h3>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[900px] border-separate border-spacing-y-2 text-left text-sm">
+          <thead className="text-xs uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="px-3">Foto</th>
+              <th className="px-3">Nome</th>
+              <th className="px-3">Depoimento</th>
+              <th className="px-3">Segmento</th>
+              <th className="px-3">Ordem</th>
+              <th className="px-3">Status</th>
+              <th className="px-3">Situação</th>
+              <th className="px-3">Criado em</th>
+              <th className="px-3 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {artists.length === 0 && (
+              <tr>
+                <td
+                  colSpan={9}
+                  className="rounded-md border border-dashed border-ink/20 bg-paper p-4 text-center text-muted-foreground"
+                >
+                  Nenhuma publicação cadastrada.
+                </td>
+              </tr>
+            )}
+            {artists.map((item) => (
+              <tr key={item.id} className="bg-paper">
+                <td className="rounded-l-md border-y border-l border-ink/10 px-3 py-2">
+                  <img
+                    src={item.imageUrl}
+                    alt={item.imageAlt}
+                    className="h-14 w-14 rounded object-cover"
+                  />
+                </td>
+                <td className="border-y border-ink/10 px-3 py-2 font-semibold text-ink">
+                  {item.name}
+                </td>
+                <td className="border-y border-ink/10 px-3 py-2 text-muted-foreground">
+                  <span className="line-clamp-2 max-w-xs">{item.testimonial}</span>
+                </td>
+                <td className="border-y border-ink/10 px-3 py-2 text-muted-foreground">
+                  {item.artisticSegment || "-"}
+                </td>
+                <td className="border-y border-ink/10 px-3 py-2">{item.order}</td>
+                <td className="border-y border-ink/10 px-3 py-2">
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${
+                      item.status === "published"
+                        ? "bg-primary/15 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {item.status === "published" ? "Publicado" : "Rascunho"}
+                  </span>
+                </td>
+                <td className="border-y border-ink/10 px-3 py-2">
+                  {item.active ? "Ativo" : "Inativo"}
+                </td>
+                <td className="border-y border-ink/10 px-3 py-2 text-muted-foreground">
+                  {new Date(item.createdAt).toLocaleDateString("pt-BR")}
+                </td>
+                <td className="rounded-r-md border-y border-r border-ink/10 px-3 py-2">
+                  <div className="flex justify-end gap-1">
+                    <button
+                      type="button"
+                      onClick={() => void previewMuralItem(item)}
+                      className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-primary hover:text-primary-foreground transition"
+                      aria-label="Prévia"
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => startEdit(item)}
+                      className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-primary hover:text-primary-foreground transition"
+                      aria-label="Editar"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void removeItem(item)}
+                      className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition"
+                      aria-label="Excluir"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+async function previewMuralItem(item: {
+  name: string;
+  testimonial: string;
+  artisticSegment: string;
+  imageUrl: string;
+  imageAlt: string;
+}) {
+  const Swal = await getSwal();
+  await Swal.fire({
+    title: escapeHtml(item.name || "Prévia do mural"),
+    html: `
+      <div class="space-y-4 text-left">
+        <img src="${escapeAttribute(item.imageUrl)}" alt="${escapeAttribute(item.imageAlt)}" class="mx-auto max-h-80 w-full rounded-md object-contain bg-[#f7f0df] p-2" />
+        ${item.artisticSegment ? `<p class="text-xs font-semibold uppercase tracking-[0.22em] text-[#1f7a4d]">${escapeHtml(item.artisticSegment)}</p>` : ""}
+        <p class="text-base leading-7 text-[#2f2a22]">“${escapeHtml(item.testimonial)}”</p>
+      </div>
+    `,
+    confirmButtonText: "Fechar",
+    confirmButtonColor: "#1f7a4d",
+    width: "min(94vw, 760px)",
+  });
 }
 
 async function getSwal() {

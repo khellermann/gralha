@@ -126,8 +126,11 @@ function EditorPage() {
                 Possui graduação em Letras - Literatura, Especialização em Práticas e Vertentes -
                 Literatura Africana e Infantil e Mestrado no curso de Ciências da Religião na
                 Pontifícia Universidade Católica de São Paulo, PUC/SP, Brasil. Título da tese:
-                <strong> Notas biográficas e metáforas religiosas na poesia de Jorge de Lima</strong>,
-                com orientação do Dr. Ênio José da Costa Brito.
+                <strong>
+                  {" "}
+                  Notas biográficas e metáforas religiosas na poesia de Jorge de Lima
+                </strong>
+                , com orientação do Dr. Ênio José da Costa Brito.
               </p>
               <p>
                 É membro da ALGRASP, Academia de Letras da Grande São Paulo, com posse em

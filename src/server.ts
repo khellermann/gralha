@@ -3,6 +3,7 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderEditionPreviewResponse } from "./lib/edition-preview-image";
 import { renderErrorPage } from "./lib/error-page";
+import { handleMuralFileDelete, handleMuralUpload } from "./lib/mural-local-files";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -53,6 +54,14 @@ export default {
 
       if (request.method === "GET" && editionPreviewMatch) {
         return await renderEditionPreviewResponse(editionPreviewMatch[1]);
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/mural/upload") {
+        return await handleMuralUpload(request);
+      }
+
+      if (request.method === "DELETE" && url.pathname === "/api/mural/file") {
+        return await handleMuralFileDelete(request);
       }
 
       const handler = await getServerEntry();

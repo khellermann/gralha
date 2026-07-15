@@ -17,6 +17,8 @@ dist-ssr
 .vercel
 .nitro
 *.local
+public/uploads/mural/*
+!public/uploads/mural/.gitkeep
 
 # Wrangler / Cloudflare
 .wrangler/

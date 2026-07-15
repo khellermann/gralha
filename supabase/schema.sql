@@ -24,11 +24,27 @@ create table if not exists public.sponsors (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.mural_artistas (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null,
+  depoimento text not null,
+  segmento_artistico text,
+  imagem_url text not null,
+  imagem_alt text not null,
+  ordem integer not null default 0,
+  status text not null default 'draft' check (status in ('draft', 'published')),
+  ativo boolean not null default true,
+  criado_em timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  publicado_em timestamptz
+);
+
 alter table public.sponsors add column if not exists whatsapp text;
 alter table public.sponsors add column if not exists address text;
 
 alter table public.editions enable row level security;
 alter table public.sponsors enable row level security;
+alter table public.mural_artistas enable row level security;
 
 drop policy if exists "Public can read editions" on public.editions;
 create policy "Public can read editions"
@@ -53,6 +69,20 @@ using (true);
 drop policy if exists "Authenticated editors can manage sponsors" on public.sponsors;
 create policy "Authenticated editors can manage sponsors"
 on public.sponsors
+for all
+to authenticated
+using (true)
+with check (true);
+
+drop policy if exists "Public can read published mural artists" on public.mural_artistas;
+create policy "Public can read published mural artists"
+on public.mural_artistas
+for select
+using (status = 'published' and ativo = true);
+
+drop policy if exists "Authenticated editors can manage mural artists" on public.mural_artistas;
+create policy "Authenticated editors can manage mural artists"
+on public.mural_artistas
 for all
 to authenticated
 using (true)

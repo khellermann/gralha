@@ -24,6 +24,23 @@ export interface Sponsor {
   createdAt: string;
 }
 
+export type MuralStatus = "draft" | "published";
+
+export interface MuralArtist {
+  id: string;
+  name: string;
+  testimonial: string;
+  artisticSegment: string;
+  imageUrl: string;
+  imageAlt: string;
+  order: number;
+  status: MuralStatus;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+}
+
 type EditionRow = {
   id: string;
   title: string;
@@ -46,6 +63,21 @@ type SponsorRow = {
   image_path: string;
   active: boolean;
   created_at: string;
+};
+
+type MuralArtistRow = {
+  id: string;
+  nome: string;
+  depoimento: string;
+  segmento_artistico: string | null;
+  imagem_url: string;
+  imagem_alt: string;
+  ordem: number;
+  status: MuralStatus;
+  ativo: boolean;
+  criado_em: string;
+  atualizado_em: string;
+  publicado_em: string | null;
 };
 
 function mapEdition(row: EditionRow): Edition {
@@ -73,6 +105,23 @@ function mapSponsor(row: SponsorRow): Sponsor {
     imagePath: row.image_path,
     active: row.active,
     createdAt: row.created_at,
+  };
+}
+
+function mapMuralArtist(row: MuralArtistRow): MuralArtist {
+  return {
+    id: row.id,
+    name: row.nome,
+    testimonial: row.depoimento,
+    artisticSegment: row.segmento_artistico ?? "",
+    imageUrl: row.imagem_url,
+    imageAlt: row.imagem_alt,
+    order: row.ordem,
+    status: row.status,
+    active: row.ativo,
+    createdAt: row.criado_em,
+    updatedAt: row.atualizado_em,
+    publishedAt: row.publicado_em,
   };
 }
 
@@ -141,7 +190,9 @@ export async function deleteEdition(edition: Edition) {
   const { error } = await supabase.from("editions").delete().eq("id", edition.id);
   if (error) throw error;
 
-  await supabase.storage.from(EDITIONS_BUCKET).remove([edition.pdfPath, getEditionCoverImagePath(edition.id)]);
+  await supabase.storage
+    .from(EDITIONS_BUCKET)
+    .remove([edition.pdfPath, getEditionCoverImagePath(edition.id)]);
 }
 
 export async function uploadEditionPdf(id: string, file: File): Promise<string> {
@@ -177,7 +228,8 @@ export function getEditionCoverImagePath(id: string): string {
 }
 
 export function getEditionCoverImageUrl(id: string): string {
-  return supabase.storage.from(EDITIONS_BUCKET).getPublicUrl(getEditionCoverImagePath(id)).data.publicUrl;
+  return supabase.storage.from(EDITIONS_BUCKET).getPublicUrl(getEditionCoverImagePath(id)).data
+    .publicUrl;
 }
 
 export async function getSponsors(): Promise<Sponsor[]> {
@@ -252,6 +304,130 @@ export function getSponsorImageUrl(imagePath: string): string {
   return supabase.storage.from(SPONSORS_BUCKET).getPublicUrl(imagePath).data.publicUrl;
 }
 
+export async function getMuralArtists(): Promise<MuralArtist[]> {
+  const { data, error } = await supabase
+    .from("mural_artistas")
+    .select("*")
+    .order("ordem", { ascending: true })
+    .order("criado_em", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []).map((row) => mapMuralArtist(row as MuralArtistRow));
+}
+
+export async function getPublishedMuralArtists(): Promise<MuralArtist[]> {
+  const { data, error } = await supabase
+    .from("mural_artistas")
+    .select("*")
+    .eq("status", "published")
+    .eq("ativo", true)
+    .order("ordem", { ascending: true })
+    .order("publicado_em", { ascending: false, nullsFirst: false });
+
+  if (error) throw error;
+  return (data ?? []).map((row) => mapMuralArtist(row as MuralArtistRow));
+}
+
+export async function saveMuralArtist(input: {
+  id: string;
+  name: string;
+  testimonial: string;
+  artisticSegment: string;
+  imageUrl: string;
+  imageAlt: string;
+  order: number;
+  status: MuralStatus;
+  active: boolean;
+}) {
+  const { error } = await supabase.from("mural_artistas").insert({
+    id: input.id,
+    nome: cleanText(input.name),
+    depoimento: cleanText(input.testimonial),
+    segmento_artistico: cleanText(input.artisticSegment) || null,
+    imagem_url: input.imageUrl,
+    imagem_alt: cleanText(input.imageAlt),
+    ordem: Number.isFinite(input.order) ? input.order : 0,
+    status: input.status,
+    ativo: input.active,
+    publicado_em: input.status === "published" ? new Date().toISOString() : null,
+  });
+
+  if (error) throw error;
+}
+
+export async function updateMuralArtist(input: MuralArtist) {
+  const { error } = await supabase
+    .from("mural_artistas")
+    .update({
+      nome: cleanText(input.name),
+      depoimento: cleanText(input.testimonial),
+      segmento_artistico: cleanText(input.artisticSegment) || null,
+      imagem_url: input.imageUrl,
+      imagem_alt: cleanText(input.imageAlt),
+      ordem: Number.isFinite(input.order) ? input.order : 0,
+      status: input.status,
+      ativo: input.active,
+      publicado_em:
+        input.status === "published" ? (input.publishedAt ?? new Date().toISOString()) : null,
+    })
+    .eq("id", input.id);
+
+  if (error) throw error;
+}
+
+export async function deleteMuralArtist(id: string) {
+  const { error } = await supabase.from("mural_artistas").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function uploadMuralArtistImage(file: File, artistName: string): Promise<string> {
+  const token = await getAuthToken();
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("artistName", artistName);
+
+  const response = await fetch("/api/mural/upload", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as { path?: string; error?: string };
+  if (!response.ok || !payload.path) {
+    throw new Error(payload.error || "Não foi possível enviar a imagem.");
+  }
+
+  return payload.path;
+}
+
+export async function deleteMuralArtistImage(imageUrl: string): Promise<void> {
+  if (!imageUrl.startsWith("/uploads/mural/")) return;
+  const token = await getAuthToken();
+  const response = await fetch("/api/mural/file", {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ path: imageUrl }),
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(payload.error || "Não foi possível remover a imagem.");
+  }
+}
+
+export async function getAuthToken(): Promise<string> {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Sessão expirada.");
+  return token;
+}
+
 export async function signIn(email: string, password: string) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
@@ -288,4 +464,11 @@ function slugFileName(fileName: string, fallback: string) {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
     .toLowerCase();
+}
+
+function cleanText(value: string) {
+  return value
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }

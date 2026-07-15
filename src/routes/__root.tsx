@@ -21,9 +21,7 @@ function NotFoundComponent() {
             <p className="text-[10px] uppercase tracking-[0.45em] text-muted-foreground">
               Jornal Cultural
             </p>
-            <h1 className="mt-2 text-serif text-3xl font-black text-ink sm:text-5xl">
-              A Gralha
-            </h1>
+            <h1 className="mt-2 text-serif text-3xl font-black text-ink sm:text-5xl">A Gralha</h1>
           </div>
 
           <div className="grid gap-8 px-6 py-10 sm:px-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">

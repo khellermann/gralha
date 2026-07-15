@@ -6,6 +6,7 @@ import { CulturalLoader } from "@/components/CulturalLoader";
 import { EditionCard } from "@/components/EditionCard";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { MuralSection } from "@/components/MuralSection";
 import { SponsorCarousel } from "@/components/SponsorCarousel";
 import { renderPdfPageToImage } from "@/lib/pdf";
 import { absoluteUrl, createSeo, jsonLd } from "@/lib/seo";
@@ -191,6 +192,19 @@ function Index() {
           </div>
         </section>
       )}
+
+      <section className="mx-auto max-w-6xl px-4 py-12 w-full">
+        <div className="mb-8 text-center">
+          <p className="text-xs uppercase tracking-[0.35em] text-primary">Mural</p>
+          <h3 className="text-serif text-3xl sm:text-4xl font-black text-ink">
+            Artistas com A Gralha
+          </h3>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Fotos e depoimentos de quem ajuda a cultura a circular pelas páginas do jornal.
+          </p>
+        </div>
+        <MuralSection />
+      </section>
 
       <section className="mx-auto max-w-6xl px-4 py-12 w-full">
         <div className="text-center mb-6">

@@ -162,9 +162,9 @@ function JornalPage() {
               <p>
                 Ao longo de sua trajetória, o projeto já ultrapassou dez edições, distribuiu mais de
                 dez mil exemplares e rompeu fronteiras. Além de circular por diversas cidades
-                brasileiras, o jornal chegou também a países como Portugal e Estados Unidos, reunindo
-                artistas de diferentes estados do Brasil e demonstrando que a cultura não conhece
-                limites geográficos.
+                brasileiras, o jornal chegou também a países como Portugal e Estados Unidos,
+                reunindo artistas de diferentes estados do Brasil e demonstrando que a cultura não
+                conhece limites geográficos.
               </p>
               <p>
                 O Jornal Cultural Agralha nasceu em um momento de crise, mas escolheu responder com

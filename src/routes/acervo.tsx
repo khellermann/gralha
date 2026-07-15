@@ -25,8 +25,7 @@ export const Route = createFileRoute("/acervo")({
           "@type": "CollectionPage",
           name: "Acervo completo - A Gralha",
           url: absoluteUrl("/acervo"),
-          description:
-            "Arquivo completo das edições digitais do jornal cultural A Gralha.",
+          description: "Arquivo completo das edições digitais do jornal cultural A Gralha.",
           inLanguage: "pt-BR",
           isPartOf: {
             "@type": "WebSite",
@@ -108,7 +107,8 @@ function ArchivePage() {
             <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
               <div className="inline-flex items-center gap-2 rounded-full border border-ink/15 bg-card/70 px-4 py-2 text-sm text-ink">
                 <Archive className="h-4 w-4 text-primary" />
-                {editions.length} {editions.length === 1 ? "edição publicada" : "edições publicadas"}
+                {editions.length}{" "}
+                {editions.length === 1 ? "edição publicada" : "edições publicadas"}
               </div>
             </div>
 
