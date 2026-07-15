@@ -74,7 +74,7 @@ function NotFoundComponent() {
                 <p className="text-xs uppercase tracking-[0.35em] text-primary">
                   <TypewriterText
                     text="Página perdida"
-                    speed={70}
+                    speed={110}
                     soundEnabled={soundEnabled}
                     replayKey={replayKey}
                   />
@@ -94,8 +94,8 @@ function NotFoundComponent() {
               <p className="text-xs uppercase tracking-[0.35em] text-primary">
                 <TypewriterText
                   text="Fora do acervo"
-                  delay={700}
-                  speed={70}
+                  delay={1100}
+                  speed={105}
                   soundEnabled={soundEnabled}
                   replayKey={replayKey}
                 />
@@ -103,8 +103,8 @@ function NotFoundComponent() {
               <h2 className="mt-3 text-serif text-3xl font-black leading-tight text-ink sm:text-5xl">
                 <TypewriterText
                   text="Esta página escapou da edição."
-                  delay={1300}
-                  speed={55}
+                  delay={2100}
+                  speed={85}
                   cursor
                   soundEnabled={soundEnabled}
                   replayKey={replayKey}
@@ -113,8 +113,8 @@ function NotFoundComponent() {
               <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base lg:mx-0">
                 <TypewriterText
                   text="O endereço pode ter mudado, sido arquivado ou simplesmente não existir. Você pode voltar para a capa do jornal ou seguir direto para o acervo completo."
-                  delay={3300}
-                  speed={24}
+                  delay={5200}
+                  speed={38}
                   soundEnabled={soundEnabled}
                   replayKey={replayKey}
                 />
@@ -185,7 +185,7 @@ function TypewriterText({
         }
       };
 
-      typeNextCharacter();
+      typingTimer = window.setTimeout(typeNextCharacter, 180);
     }, delay);
 
     return () => {
@@ -195,7 +195,7 @@ function TypewriterText({
   }, [delay, prefersReducedMotion, replayKey, soundEnabled, speed, text]);
 
   return (
-    <span aria-label={text}>
+    <span aria-label={text} className="inline-block min-h-[1em]">
       <span aria-hidden="true">{displayed}</span>
       {(cursor || isTyping) && !prefersReducedMotion && (
         <span aria-hidden="true" className="ml-1 inline-block animate-pulse text-primary">
