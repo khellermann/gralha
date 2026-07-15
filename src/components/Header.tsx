@@ -40,6 +40,13 @@ export function Header() {
             Mural
           </Link>
           <Link
+            to="/publique"
+            className="text-ink/70 hover:text-primary transition-colors hidden md:inline"
+            activeProps={{ className: "text-primary font-semibold" }}
+          >
+            Publique
+          </Link>
+          <Link
             to="/acervo"
             className="text-ink/70 hover:text-primary transition-colors hidden sm:inline"
             activeProps={{ className: "text-primary font-semibold" }}
