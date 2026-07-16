@@ -83,7 +83,7 @@ function PublishPage() {
                 </p>
                 <div className="mt-7 flex flex-wrap gap-3">
                   <a
-                    href="mailto:jornalculturalagralha@gmail.com"
+                    href="mailto:editoraagralha@gmail.com"
                     className="inline-flex items-center gap-2 rounded-full bg-gralha-gradient px-5 py-3 text-sm font-semibold text-primary-foreground paper-shadow transition hover:brightness-110"
                   >
                     <Mail className="h-4 w-4" /> Enviar material
@@ -176,10 +176,10 @@ function PublishPage() {
                 </p>
               </div>
               <a
-                href="mailto:jornalculturalagralha@gmail.com"
+                href="mailto:editoraagralha@gmail.com"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-paper px-5 py-3 text-sm font-semibold text-ink transition hover:bg-primary hover:text-primary-foreground"
               >
-                <Send className="h-4 w-4" /> jornalculturalagralha@gmail.com
+                <Send className="h-4 w-4" /> editoraagralha@gmail.com
               </a>
             </div>
           </section>
