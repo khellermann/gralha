@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderEditionPreviewResponse } from "./lib/edition-preview-image";
+import { handleExternalPdfProxy } from "./lib/external-pdf-proxy";
 import { renderErrorPage } from "./lib/error-page";
 
 type ServerEntry = {
@@ -53,6 +54,10 @@ export default {
 
       if (request.method === "GET" && editionPreviewMatch) {
         return await renderEditionPreviewResponse(editionPreviewMatch[1]);
+      }
+
+      if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/api/pdf") {
+        return await handleExternalPdfProxy(request);
       }
 
       const handler = await getServerEntry();

@@ -79,6 +79,10 @@ export async function uploadEditionCoverImage(): Promise<string> {
 }
 
 export function getEditionPdfUrl(pdfPath: string): string {
+  if (/^https?:\/\//i.test(pdfPath)) {
+    return `/api/pdf?url=${encodeURIComponent(pdfPath)}`;
+  }
+
   return pdfPath;
 }
 
