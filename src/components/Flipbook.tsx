@@ -4,6 +4,7 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
   Maximize2,
   RotateCcw,
   Rows3,
@@ -25,6 +26,7 @@ const zoomSteps = [1, 1.25, 1.5, 1.75, 2];
 export function Flipbook({ edition }: Props) {
   const [pages, setPages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [current, setCurrent] = useState(0);
   const [dims, setDims] = useState({ w: 500, h: 700 });
   const [zoomIndex, setZoomIndex] = useState(0);
@@ -38,13 +40,17 @@ export function Flipbook({ edition }: Props) {
   useEffect(() => {
     let alive = true;
     setLoading(true);
+    setLoadError(false);
     setPages([]);
 
     renderPdfToImages(getEditionPdfUrl(edition.pdfPath), 1.8)
       .then((images) => {
         if (alive) setPages(images);
       })
-      .catch((error) => console.error(error))
+      .catch((error) => {
+        console.error(error);
+        if (alive) setLoadError(true);
+      })
       .finally(() => {
         if (alive) setLoading(false);
       });
@@ -89,8 +95,22 @@ export function Flipbook({ edition }: Props) {
   }
   if (pages.length === 0) {
     return (
-      <div className="text-center py-20 text-muted-foreground">
-        Esta edição ainda não possui páginas publicadas.
+      <div className="mx-auto max-w-xl py-20 text-center text-muted-foreground">
+        <p>
+          {loadError
+            ? "Não foi possível abrir o PDF no leitor integrado."
+            : "Esta edição ainda não possui páginas publicadas."}
+        </p>
+        {loadError && (
+          <a
+            href={getEditionPdfUrl(edition.pdfPath)}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-5 inline-flex items-center gap-2 rounded-full bg-gralha-gradient px-5 py-3 text-sm font-semibold text-primary-foreground paper-shadow transition hover:brightness-110"
+          >
+            Abrir PDF em nova aba <ExternalLink className="h-4 w-4" />
+          </a>
+        )}
       </div>
     );
   }

@@ -499,10 +499,13 @@ function EditionsSection({
   editions: Edition[];
   onChange: () => Promise<void>;
 }) {
+  const [pdfMode, setPdfMode] = useState<"upload" | "external">("upload");
   const [title, setTitle] = useState("");
   const [number, setNumber] = useState("");
   const [publishedAt, setPublishedAt] = useState(() => new Date().toISOString().slice(0, 10));
   const [file, setFile] = useState<File | null>(null);
+  const [externalPdfUrl, setExternalPdfUrl] = useState("");
+  const [externalPageCount, setExternalPageCount] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
@@ -521,16 +524,37 @@ function EditionsSection({
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!file || !coverFile) return;
+    if (!coverFile) return;
+    if (pdfMode === "upload" && !file) return;
+    if (pdfMode === "external" && !isValidExternalPdfUrl(externalPdfUrl)) {
+      void showError("Informe um link externo válido para o PDF.");
+      return;
+    }
+    if (pdfMode === "external" && !isValidPageCount(externalPageCount)) {
+      void showError("Informe a quantidade de páginas da edição.");
+      return;
+    }
+
     setBusy(true);
     try {
       const id = uid();
-      setProgress("Lendo PDF...");
-      const pageCount = await getPdfPageCount(file);
+      let pdfPath = externalPdfUrl.trim();
+      let pdfOriginalName = getExternalPdfName(pdfPath);
+      let pdfSize = 0;
+      let pageCount = Number(externalPageCount);
+
+      if (pdfMode === "upload") {
+        if (!file) return;
+        setProgress("Lendo PDF...");
+        pageCount = await getPdfPageCount(file);
+        setProgress("Enviando PDF...");
+        pdfPath = await uploadEditionPdf(id, file);
+        pdfOriginalName = file.name;
+        pdfSize = file.size;
+      }
+
       setProgress("Enviando capa...");
       await uploadEditionCoverImage(id, coverFile);
-      setProgress("Enviando PDF...");
-      const pdfPath = await uploadEditionPdf(id, file);
       setProgress("Salvando edição...");
       await saveEdition({
         id,
@@ -538,13 +562,15 @@ function EditionsSection({
         number: number.trim() || String(editions.length + 1),
         publishedAt: new Date(publishedAt).toISOString(),
         pdfPath,
-        pdfOriginalName: file.name,
-        pdfSize: file.size,
+        pdfOriginalName,
+        pdfSize,
         pageCount,
       });
       setTitle("");
       setNumber("");
       setFile(null);
+      setExternalPdfUrl("");
+      setExternalPageCount("");
       setCoverFile(null);
       const input = document.getElementById("edition-file") as HTMLInputElement | null;
       if (input) input.value = "";
@@ -716,16 +742,85 @@ function EditionsSection({
             required
           />
         </Field>
-        <Field label="Arquivo PDF">
-          <input
-            id="edition-file"
-            type="file"
-            accept="application/pdf"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-paper file:cursor-pointer"
-            required
-          />
+        <Field label="Origem do PDF">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label
+              className={`rounded-md border px-4 py-3 text-sm transition ${
+                pdfMode === "upload"
+                  ? "border-primary bg-primary/10 text-ink"
+                  : "border-ink/15 bg-paper text-muted-foreground"
+              }`}
+            >
+              <input
+                type="radio"
+                name="pdf-mode"
+                value="upload"
+                checked={pdfMode === "upload"}
+                onChange={() => setPdfMode("upload")}
+                className="mr-2"
+              />
+              Enviar PDF para o Supabase
+            </label>
+            <label
+              className={`rounded-md border px-4 py-3 text-sm transition ${
+                pdfMode === "external"
+                  ? "border-primary bg-primary/10 text-ink"
+                  : "border-ink/15 bg-paper text-muted-foreground"
+              }`}
+            >
+              <input
+                type="radio"
+                name="pdf-mode"
+                value="external"
+                checked={pdfMode === "external"}
+                onChange={() => setPdfMode("external")}
+                className="mr-2"
+              />
+              Usar link externo
+            </label>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Para economizar o Supabase, use o link direto do PDF anexado no GitHub Releases.
+          </p>
         </Field>
+
+        {pdfMode === "upload" ? (
+          <Field label="Arquivo PDF">
+            <input
+              id="edition-file"
+              type="file"
+              accept="application/pdf"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              className="w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-paper file:cursor-pointer"
+              required
+            />
+          </Field>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_160px]">
+            <Field label="Link externo do PDF">
+              <input
+                type="url"
+                value={externalPdfUrl}
+                onChange={(e) => setExternalPdfUrl(e.target.value)}
+                placeholder="https://github.com/.../releases/download/.../edicao.pdf"
+                className="w-full rounded-md border border-input bg-paper px-3 py-2 text-sm"
+                required
+              />
+            </Field>
+            <Field label="Páginas">
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={externalPageCount}
+                onChange={(e) => setExternalPageCount(e.target.value)}
+                placeholder="Ex: 24"
+                className="w-full rounded-md border border-input bg-paper px-3 py-2 text-sm"
+                required
+              />
+            </Field>
+          </div>
+        )}
         <Field label="Imagem da capa">
           <input
             id="edition-cover"
@@ -764,7 +859,8 @@ function EditionsSection({
                 Nº {e.number} - {e.title}
               </p>
               <p className="text-xs text-muted-foreground">
-                {new Date(e.publishedAt).toLocaleDateString("pt-BR")} · {e.pageCount} pág.
+                {new Date(e.publishedAt).toLocaleDateString("pt-BR")} · {e.pageCount} pág. ·{" "}
+                {isExternalPdfUrl(e.pdfPath) ? "PDF externo" : "Supabase"}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1">
@@ -1564,6 +1660,35 @@ function escapeHtml(value: string) {
 
 function escapeAttribute(value: string) {
   return escapeHtml(value).replace(/`/g, "&#096;");
+}
+
+function isExternalPdfUrl(value: string) {
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+function isValidExternalPdfUrl(value: string) {
+  if (!isExternalPdfUrl(value)) return false;
+  return value.trim().toLowerCase().includes(".pdf");
+}
+
+function isValidPageCount(value: string) {
+  const pageCount = Number(value);
+  return Number.isInteger(pageCount) && pageCount > 0;
+}
+
+function getExternalPdfName(value: string) {
+  try {
+    const url = new URL(value);
+    const fileName = decodeURIComponent(url.pathname.split("/").filter(Boolean).pop() ?? "");
+    return fileName || "PDF externo";
+  } catch {
+    return "PDF externo";
+  }
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

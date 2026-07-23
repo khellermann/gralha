@@ -11,11 +11,11 @@ interface Props {
 }
 
 export function EditionCard({ edition, featured, index = 0 }: Props) {
-  const [cover, setCover] = useState(() => getEditionCoverImageUrl(edition.id));
+  const [cover, setCover] = useState(() => getEditionCoverImageUrl(edition));
 
   useEffect(() => {
-    setCover(getEditionCoverImageUrl(edition.id));
-  }, [edition.id]);
+    setCover(getEditionCoverImageUrl(edition));
+  }, [edition]);
 
   function fallbackToPdfCover() {
     renderPdfPageToImage(getEditionPdfUrl(edition.pdfPath), edition.coverPageIndex + 1)

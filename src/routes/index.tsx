@@ -69,7 +69,7 @@ function Index() {
   const hasFullArchive = editions.length > 9;
 
   useEffect(() => {
-    setFeaturedCover(featured ? getEditionCoverImageUrl(featured.id) : undefined);
+    setFeaturedCover(featured ? getEditionCoverImageUrl(featured) : undefined);
   }, [featured]);
 
   function fallbackFeaturedCover() {

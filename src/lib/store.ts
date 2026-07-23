@@ -1,4 +1,5 @@
 import { EDITIONS_BUCKET, MURAL_BUCKET, SPONSORS_BUCKET, supabase } from "@/lib/supabase";
+import { staticEditions } from "@/data/static-editions";
 
 export interface Edition {
   id: string;
@@ -11,6 +12,7 @@ export interface Edition {
   pdfOriginalName: string;
   pdfSize: number;
   createdAt: string;
+  coverImageUrl?: string;
 }
 
 export interface Sponsor {
@@ -128,20 +130,34 @@ function mapMuralArtist(row: MuralArtistRow): MuralArtist {
 }
 
 export async function getEditions(): Promise<Edition[]> {
-  const { data, error } = await supabase
-    .from("editions")
-    .select("*")
-    .order("published_at", { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from("editions")
+      .select("*")
+      .order("published_at", { ascending: false });
 
-  if (error) throw error;
-  return (data ?? []).map((row) => mapEdition(row as EditionRow));
+    if (error) throw error;
+
+    const editions = (data ?? []).map((row) => mapEdition(row as EditionRow));
+    return editions.length > 0 ? editions : staticEditions;
+  } catch (error) {
+    console.error("Unable to load editions from Supabase. Using static archive.", error);
+    return staticEditions;
+  }
 }
 
 export async function getEdition(id: string): Promise<Edition | undefined> {
-  const { data, error } = await supabase.from("editions").select("*").eq("id", id).maybeSingle();
+  try {
+    const { data, error } = await supabase.from("editions").select("*").eq("id", id).maybeSingle();
 
-  if (error) throw error;
-  return data ? mapEdition(data as EditionRow) : undefined;
+    if (error) throw error;
+    return data
+      ? mapEdition(data as EditionRow)
+      : staticEditions.find((edition) => edition.id === id);
+  } catch (error) {
+    console.error("Unable to load edition from Supabase. Using static archive.", error);
+    return staticEditions.find((edition) => edition.id === id);
+  }
 }
 
 export async function saveEdition(input: {
@@ -192,9 +208,12 @@ export async function deleteEdition(edition: Edition) {
   const { error } = await supabase.from("editions").delete().eq("id", edition.id);
   if (error) throw error;
 
-  await supabase.storage
-    .from(EDITIONS_BUCKET)
-    .remove([edition.pdfPath, getEditionCoverImagePath(edition.id)]);
+  const pathsToRemove = [getEditionCoverImagePath(edition.id)];
+  if (!isExternalPdfPath(edition.pdfPath)) {
+    pathsToRemove.push(edition.pdfPath);
+  }
+
+  await supabase.storage.from(EDITIONS_BUCKET).remove(pathsToRemove);
 }
 
 export async function uploadEditionPdf(id: string, file: File): Promise<string> {
@@ -222,6 +241,7 @@ export async function uploadEditionCoverImage(id: string, file: File): Promise<s
 }
 
 export function getEditionPdfUrl(pdfPath: string): string {
+  if (isExternalPdfPath(pdfPath)) return pdfPath;
   return supabase.storage.from(EDITIONS_BUCKET).getPublicUrl(pdfPath).data.publicUrl;
 }
 
@@ -229,7 +249,12 @@ export function getEditionCoverImagePath(id: string): string {
   return `${id}/cover`;
 }
 
-export function getEditionCoverImageUrl(id: string): string {
+export function getEditionCoverImageUrl(editionOrId: Edition | string): string {
+  if (typeof editionOrId !== "string" && editionOrId.coverImageUrl) {
+    return editionOrId.coverImageUrl;
+  }
+
+  const id = typeof editionOrId === "string" ? editionOrId : editionOrId.id;
   return supabase.storage.from(EDITIONS_BUCKET).getPublicUrl(getEditionCoverImagePath(id)).data
     .publicUrl;
 }
@@ -482,4 +507,8 @@ function cleanText(value: string) {
 
 function isMuralStoragePath(value: string) {
   return /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9._-]+\.webp$/.test(value);
+}
+
+function isExternalPdfPath(value: string) {
+  return /^https?:\/\//i.test(value);
 }
