@@ -69,7 +69,7 @@ function paintFallbackMark(ctx: CanvasRenderingContext) {
 }
 
 function pngResponse(body: Buffer) {
-  return new Response(body, {
+  return new Response(body as BodyInit, {
     headers: {
       "content-type": "image/png",
       "cache-control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800",

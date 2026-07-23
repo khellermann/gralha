@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function EditionCard({ edition, featured, index = 0 }: Props) {
-  const [cover, setCover] = useState(() => getEditionCoverImageUrl(edition));
+  const [cover, setCover] = useState<string | undefined>(() => getEditionCoverImageUrl(edition));
 
   useEffect(() => {
     setCover(getEditionCoverImageUrl(edition));

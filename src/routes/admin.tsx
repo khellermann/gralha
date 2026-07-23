@@ -206,11 +206,10 @@ function Dashboard() {
       {loading && <div className="text-sm text-muted-foreground">Carregando dados...</div>}
 
       <div className="rounded-xl border border-primary/25 bg-primary/10 p-5 text-sm leading-7 text-ink">
-        <p className="font-semibold text-primary">Modo JSON ativo</p>
+        <p className="font-semibold text-primary">Servidor próprio ativo</p>
         <p>
-          O site não usa mais Supabase para o conteúdo público. Para publicar ou editar edições,
-          patrocinadores e mural, altere os arquivos em <strong>src/data</strong> e faça um novo
-          deploy. Os botões de cadastro continuam visíveis apenas como referência do fluxo anterior.
+          O painel salva edições, patrocinadores e mural no PostgreSQL da VPS. PDFs e imagens
+          enviados ficam fisicamente em <strong>public/uploads</strong> no servidor.
         </p>
       </div>
 
@@ -768,7 +767,7 @@ function EditionsSection({
                 onChange={() => setPdfMode("upload")}
                 className="mr-2"
               />
-              Enviar PDF para o Supabase
+              Enviar PDF para o servidor
             </label>
             <label
               className={`rounded-md border px-4 py-3 text-sm transition ${
@@ -789,7 +788,7 @@ function EditionsSection({
             </label>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Para economizar o Supabase, use o link direto do PDF anexado no GitHub Releases.
+            Se preferir, informe um link externo para PDF já hospedado fora do servidor.
           </p>
         </Field>
 
@@ -869,7 +868,7 @@ function EditionsSection({
               </p>
               <p className="text-xs text-muted-foreground">
                 {new Date(e.publishedAt).toLocaleDateString("pt-BR")} · {e.pageCount} pág. ·{" "}
-                {isExternalPdfUrl(e.pdfPath) ? "PDF externo" : "Supabase"}
+                {isExternalPdfUrl(e.pdfPath) ? "PDF externo" : "Servidor"}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1">

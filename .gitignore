@@ -19,6 +19,14 @@ dist-ssr
 *.local
 public/uploads/mural/*
 !public/uploads/mural/.gitkeep
+public/uploads/pdfs/*
+!public/uploads/pdfs/.gitkeep
+public/uploads/capas/*
+!public/uploads/capas/.gitkeep
+public/uploads/patrocinadores/*
+!public/uploads/patrocinadores/.gitkeep
+imports/*
+!imports/.gitkeep
 
 # Wrangler / Cloudflare
 .wrangler/

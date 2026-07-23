@@ -167,7 +167,7 @@ function TypewriterText({
 
   useEffect(() => {
     setDisplayed("");
-    let typingTimer: ReturnType<typeof window.setTimeout> | undefined;
+    let typingTimer: number | undefined;
     const startTimer = window.setTimeout(() => {
       let index = 0;
 

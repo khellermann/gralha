@@ -1,7 +1,3 @@
-import editionsData from "@/data/editions.json";
-import muralArtistsData from "@/data/mural-artistas.json";
-import sponsorsData from "@/data/sponsors.json";
-
 export interface Edition {
   id: string;
   title: string;
@@ -45,37 +41,63 @@ export interface MuralArtist {
   publishedAt: string | null;
 }
 
-const STATIC_MODE_MESSAGE =
-  "O site agora usa arquivos JSON no projeto. Edite os arquivos em src/data e faça deploy para publicar alterações.";
+type EditionInput = Partial<Edition> & Pick<Edition, "id">;
+type SponsorInput = Partial<Sponsor> & Pick<Sponsor, "id">;
+
+const SESSION_KEY = "agralha-admin-token";
+const pendingCoverImages = new Map<string, string>();
 
 export async function getEditions(): Promise<Edition[]> {
-  return [...(editionsData as Edition[])].sort(
-    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
-  );
+  return api<Edition[]>("/api/content/editions");
 }
 
 export async function getEdition(id: string): Promise<Edition | undefined> {
-  return (editionsData as Edition[]).find((edition) => edition.id === id);
+  const response = await fetch(`/api/content/editions/${encodeURIComponent(id)}`);
+  if (response.status === 404) return undefined;
+  return readApiResponse<Edition>(response);
 }
 
-export async function saveEdition() {
-  throw new Error(STATIC_MODE_MESSAGE);
+export async function saveEdition(edition: EditionInput) {
+  const coverImageUrl = pendingCoverImages.get(edition.id) ?? edition.coverImageUrl;
+  pendingCoverImages.delete(edition.id);
+  return adminApi("/api/admin/editions", {
+    method: "POST",
+    body: JSON.stringify({
+      coverPageIndex: 0,
+      createdAt: new Date().toISOString(),
+      ...edition,
+      coverImageUrl,
+    }),
+  });
 }
 
-export async function updateEdition() {
-  throw new Error(STATIC_MODE_MESSAGE);
+export async function updateEdition(edition: EditionInput) {
+  const current = await getEdition(edition.id);
+  return adminApi("/api/admin/editions", {
+    method: "POST",
+    body: JSON.stringify({ ...current, ...edition }),
+  });
 }
 
-export async function deleteEdition() {
-  throw new Error(STATIC_MODE_MESSAGE);
+export async function deleteEdition(edition: Edition) {
+  return adminApi("/api/admin/editions", {
+    method: "DELETE",
+    body: JSON.stringify({ id: edition.id }),
+  });
 }
 
-export async function uploadEditionPdf(): Promise<string> {
-  throw new Error(STATIC_MODE_MESSAGE);
+export async function uploadEditionPdf(id: string, file: File): Promise<string> {
+  return uploadFile("pdfs", file, id);
 }
 
-export async function uploadEditionCoverImage(): Promise<string> {
-  throw new Error(STATIC_MODE_MESSAGE);
+export async function uploadEditionCoverImage(id: string, file: File): Promise<string> {
+  const path = await uploadFile("capas", file, id);
+  pendingCoverImages.set(id, path);
+  await adminApi("/api/admin/editions/cover", {
+    method: "POST",
+    body: JSON.stringify({ id, coverImageUrl: path }),
+  }).catch(() => undefined);
+  return path;
 }
 
 export function getEditionPdfUrl(pdfPath: string): string {
@@ -95,30 +117,36 @@ export function getEditionCoverImageUrl(editionOrId: Edition | string): string {
     return editionOrId.coverImageUrl || "/social-preview.png";
   }
 
-  const edition = (editionsData as Edition[]).find((item) => item.id === editionOrId);
-  return edition?.coverImageUrl || "/social-preview.png";
+  return pendingCoverImages.get(editionOrId) || "/social-preview.png";
 }
 
 export async function getSponsors(): Promise<Sponsor[]> {
-  return [...(sponsorsData as Sponsor[])].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-  );
+  return api<Sponsor[]>("/api/content/sponsors");
 }
 
-export async function saveSponsor() {
-  throw new Error(STATIC_MODE_MESSAGE);
+export async function saveSponsor(sponsor: SponsorInput) {
+  return adminApi("/api/admin/sponsors", {
+    method: "POST",
+    body: JSON.stringify({ createdAt: new Date().toISOString(), active: true, ...sponsor }),
+  });
 }
 
-export async function updateSponsor() {
-  throw new Error(STATIC_MODE_MESSAGE);
+export async function updateSponsor(sponsor: SponsorInput) {
+  return adminApi("/api/admin/sponsors", {
+    method: "POST",
+    body: JSON.stringify(sponsor),
+  });
 }
 
-export async function deleteSponsor() {
-  throw new Error(STATIC_MODE_MESSAGE);
+export async function deleteSponsor(sponsor: Sponsor) {
+  return adminApi("/api/admin/sponsors", {
+    method: "DELETE",
+    body: JSON.stringify({ id: sponsor.id }),
+  });
 }
 
-export async function uploadSponsorImage(): Promise<string> {
-  throw new Error(STATIC_MODE_MESSAGE);
+export async function uploadSponsorImage(id: string, file: File): Promise<string> {
+  return uploadFile("patrocinadores", file, id);
 }
 
 export function getSponsorImageUrl(imagePath: string): string {
@@ -126,35 +154,43 @@ export function getSponsorImageUrl(imagePath: string): string {
 }
 
 export async function getMuralArtists(): Promise<MuralArtist[]> {
-  return [...(muralArtistsData as MuralArtist[])].sort((a, b) => {
-    if (a.order !== b.order) return a.order - b.order;
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
+  return api<MuralArtist[]>("/api/content/mural-artists");
 }
 
 export async function getPublishedMuralArtists(): Promise<MuralArtist[]> {
-  const artists = await getMuralArtists();
-  return artists.filter((artist) => artist.status === "published" && artist.active);
+  return api<MuralArtist[]>("/api/content/mural-artists/published");
 }
 
-export async function saveMuralArtist() {
-  throw new Error(STATIC_MODE_MESSAGE);
+export async function saveMuralArtist(artist: MuralArtist) {
+  return adminApi("/api/admin/mural-artists", {
+    method: "POST",
+    body: JSON.stringify({ ...artist, imageUrl: artist.imagePath }),
+  });
 }
 
-export async function updateMuralArtist() {
-  throw new Error(STATIC_MODE_MESSAGE);
+export async function updateMuralArtist(artist: MuralArtist) {
+  return adminApi("/api/admin/mural-artists", {
+    method: "POST",
+    body: JSON.stringify({ ...artist, imageUrl: artist.imagePath }),
+  });
 }
 
-export async function deleteMuralArtist() {
-  throw new Error(STATIC_MODE_MESSAGE);
+export async function deleteMuralArtist(id: string) {
+  return adminApi("/api/admin/mural-artists", {
+    method: "DELETE",
+    body: JSON.stringify({ id }),
+  });
 }
 
-export async function uploadMuralArtistImage(): Promise<string> {
-  throw new Error(STATIC_MODE_MESSAGE);
+export async function uploadMuralArtistImage(file: File, artistName: string): Promise<string> {
+  return uploadFile("mural", file, artistName);
 }
 
-export async function deleteMuralArtistImage(): Promise<void> {
-  return undefined;
+export async function deleteMuralArtistImage(path: string): Promise<void> {
+  await adminApi("/api/admin/upload", {
+    method: "DELETE",
+    body: JSON.stringify({ path }),
+  });
 }
 
 export function getMuralArtistImageUrl(imagePath: string): string {
@@ -162,28 +198,28 @@ export function getMuralArtistImageUrl(imagePath: string): string {
 }
 
 export async function getAuthToken(): Promise<string> {
-  return "static-json-mode";
+  return localStorage.getItem(SESSION_KEY) ?? "";
 }
 
 export async function signIn(email: string, password: string) {
-  if (!email.trim() || !password.trim()) {
-    throw new Error("Informe e-mail e senha.");
-  }
-
-  localStorage.setItem("agralha-static-admin", "true");
+  const result = await api<{ token: string }>("/api/admin/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+  localStorage.setItem(SESSION_KEY, result.token);
 }
 
 export async function signOut() {
-  localStorage.removeItem("agralha-static-admin");
+  localStorage.removeItem(SESSION_KEY);
 }
 
 export async function isAuthed(): Promise<boolean> {
-  return localStorage.getItem("agralha-static-admin") === "true";
+  return Boolean(localStorage.getItem(SESSION_KEY));
 }
 
 export function onAuthChange(callback: (authed: boolean) => void) {
   const interval = window.setInterval(() => {
-    callback(localStorage.getItem("agralha-static-admin") === "true");
+    callback(Boolean(localStorage.getItem(SESSION_KEY)));
   }, 1000);
 
   return () => window.clearInterval(interval);
@@ -191,4 +227,53 @@ export function onAuthChange(callback: (authed: boolean) => void) {
 
 export function uid() {
   return crypto.randomUUID();
+}
+
+async function uploadFile(kind: string, file: File, label: string) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("label", label);
+
+  const response = await fetch(`/api/admin/upload?kind=${encodeURIComponent(kind)}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${await getAuthToken()}` },
+    body: formData,
+  });
+  const payload = await readApiResponse<{ path: string }>(response);
+  return payload.path;
+}
+
+async function adminApi<T = { ok: true }>(input: string, init?: RequestInit) {
+  return api<T>(input, {
+    ...init,
+    headers: {
+      "content-type": "application/json",
+      Authorization: `Bearer ${await getAuthToken()}`,
+      ...init?.headers,
+    },
+  });
+}
+
+async function api<T>(input: string, init?: RequestInit) {
+  const response = await fetch(input, {
+    ...init,
+    headers: {
+      "content-type": "application/json",
+      ...init?.headers,
+    },
+  });
+  return readApiResponse<T>(response);
+}
+
+async function readApiResponse<T>(response: Response) {
+  const contentType = response.headers.get("content-type") ?? "";
+  const payload = contentType.includes("application/json") ? await response.json() : undefined;
+
+  if (!response.ok) {
+    throw new Error(
+      typeof payload?.message === "string" ? payload.message : "Não foi possível concluir a ação.",
+    );
+  }
+
+  return payload as T;
 }

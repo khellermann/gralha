@@ -4,6 +4,7 @@ import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderEditionPreviewResponse } from "./lib/edition-preview-image";
 import { handleExternalPdfProxy } from "./lib/external-pdf-proxy";
 import { renderErrorPage } from "./lib/error-page";
+import { handleApiRequest } from "./lib/server-api";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -59,6 +60,9 @@ export default {
       if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/api/pdf") {
         return await handleExternalPdfProxy(request);
       }
+
+      const apiResponse = await handleApiRequest(request, url);
+      if (apiResponse) return apiResponse;
 
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

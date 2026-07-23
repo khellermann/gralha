@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { annotate, type RoughAnnotation } from "rough-notation";
+import { annotate } from "rough-notation";
 
 export function RoughUnderline({
   children,
@@ -15,7 +15,7 @@ export function RoughUnderline({
   useEffect(() => {
     if (!elementRef.current) return;
 
-    let annotation: RoughAnnotation | undefined;
+    let annotation: ReturnType<typeof annotate> | undefined;
     const timer = window.setTimeout(() => {
       if (!elementRef.current) return;
 
