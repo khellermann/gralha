@@ -205,6 +205,15 @@ function Dashboard() {
 
       {loading && <div className="text-sm text-muted-foreground">Carregando dados...</div>}
 
+      <div className="rounded-xl border border-primary/25 bg-primary/10 p-5 text-sm leading-7 text-ink">
+        <p className="font-semibold text-primary">Modo JSON ativo</p>
+        <p>
+          O site não usa mais Supabase para o conteúdo público. Para publicar ou editar edições,
+          patrocinadores e mural, altere os arquivos em <strong>src/data</strong> e faça um novo
+          deploy. Os botões de cadastro continuam visíveis apenas como referência do fluxo anterior.
+        </p>
+      </div>
+
       <DashboardStats editions={editions} sponsors={sponsors} muralArtists={muralArtists} />
 
       <div className="flex flex-wrap gap-2 rounded-xl border border-ink/15 bg-card p-2 paper-shadow">
