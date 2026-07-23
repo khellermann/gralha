@@ -3,6 +3,7 @@ import { createReadStream } from "node:fs";
 import { mkdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
+import sharp from "sharp";
 
 const IMAGE_MIME = new Map([
   ["image/jpeg", "jpg"],
@@ -14,9 +15,9 @@ const PDF_MIME = new Map([["application/pdf", "pdf"]]);
 
 const UPLOAD_KINDS = {
   pdfs: { folder: "pdfs", maxSize: 80 * 1024 * 1024, mimes: PDF_MIME },
-  capas: { folder: "capas", maxSize: 8 * 1024 * 1024, mimes: IMAGE_MIME },
-  patrocinadores: { folder: "patrocinadores", maxSize: 8 * 1024 * 1024, mimes: IMAGE_MIME },
-  mural: { folder: "mural", maxSize: 8 * 1024 * 1024, mimes: IMAGE_MIME },
+  capas: { folder: "capas", maxSize: 25 * 1024 * 1024, mimes: IMAGE_MIME },
+  patrocinadores: { folder: "patrocinadores", maxSize: 25 * 1024 * 1024, mimes: IMAGE_MIME },
+  mural: { folder: "mural", maxSize: 25 * 1024 * 1024, mimes: IMAGE_MIME },
 } as const;
 
 type UploadKind = keyof typeof UPLOAD_KINDS;
@@ -52,11 +53,14 @@ export async function saveUploadedFile(request: Request, kind: string) {
   const folder = path.join(getUploadRoot(), config.folder);
   await mkdir(folder, { recursive: true });
 
-  const fileName = `${Date.now()}-${randomBytes(4).toString("hex")}-${label}.${extension}`;
+  const isImage = IMAGE_MIME.has(file.type);
+  const output = isImage ? await optimizeImage(bytes, kind) : bytes;
+  const outputExtension = isImage ? "webp" : extension;
+  const fileName = `${Date.now()}-${randomBytes(4).toString("hex")}-${label}.${outputExtension}`;
   const physicalPath = path.join(folder, fileName);
 
   assertInsideUploadRoot(physicalPath);
-  await writeFile(physicalPath, bytes, { flag: "wx" });
+  await writeFile(physicalPath, output, { flag: "wx" });
 
   return `/uploads/${config.folder}/${fileName}`;
 }
@@ -154,6 +158,28 @@ function validateFileSignature(bytes: Buffer, extension: string) {
       status: 400,
     });
   }
+}
+
+async function optimizeImage(bytes: Buffer, kind: UploadKind) {
+  const limits = {
+    capas: { width: 1600, height: 2200, quality: 82 },
+    patrocinadores: { width: 1200, height: 700, quality: 84 },
+    mural: { width: 1400, height: 1400, quality: 82 },
+    pdfs: { width: 1600, height: 1600, quality: 82 },
+  } satisfies Record<UploadKind, { width: number; height: number; quality: number }>;
+
+  const limit = limits[kind];
+
+  return sharp(bytes, { failOn: "none" })
+    .rotate()
+    .resize({
+      width: limit.width,
+      height: limit.height,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({ quality: limit.quality, effort: 4 })
+    .toBuffer();
 }
 
 function contentTypeFor(filePath: string) {

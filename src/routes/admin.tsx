@@ -676,7 +676,7 @@ function EditionsSection({
       html: `
         <div class="text-left text-sm text-[#6b6257]">
           <p>Envie a imagem da capa desta edição. Ela será usada nos cards e na prévia do link.</p>
-          <p class="mt-2 text-xs">Formatos aceitos: JPG, PNG ou WebP.</p>
+          <p class="mt-2 text-xs">Formatos aceitos: JPG, PNG ou WebP. O servidor otimiza e converte para WebP automaticamente.</p>
         </div>
       `,
       input: "file",
@@ -839,7 +839,8 @@ function EditionsSection({
             required
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            Envie a capa em JPG, PNG ou WebP. Ela será usada nos cards e na prévia do link.
+            Envie a capa em JPG, PNG ou WebP. O servidor otimiza e converte para WebP
+            automaticamente.
           </p>
         </Field>
         <button
@@ -1082,8 +1083,8 @@ function SponsorsSection({
             required
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            Use uma imagem horizontal, de preferência 1200x600px, em PNG ou JPG. O site exibirá
-            todos os logos no mesmo tamanho visual, sem cortar a imagem.
+            Use uma imagem horizontal, de preferência 1200x600px. O servidor otimiza e converte para
+            WebP, e o site exibe todos os logos no mesmo tamanho visual.
           </p>
         </Field>
         <button
@@ -1426,8 +1427,8 @@ function MuralAdminSection({
               required={!editing}
             />
             <p className="mt-1 text-xs text-muted-foreground">
-              JPG, PNG ou WebP até 8 MB. O servidor converte para WebP e redimensiona imagens
-              grandes.
+              JPG, PNG ou WebP até 25 MB. O servidor converte para WebP e redimensiona imagens
+              grandes automaticamente.
             </p>
           </Field>
 
