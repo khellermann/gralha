@@ -1,5 +1,5 @@
 const rawSiteUrl =
-  (import.meta.env.VITE_SITE_URL as string | undefined) ?? "https://gralha.vercel.app";
+  (import.meta.env.VITE_SITE_URL as string | undefined) ?? "https://www.agralhacultural.com.br";
 
 export const siteUrl = rawSiteUrl.replace(/\/$/, "");
 export const siteName = "A Gralha";

@@ -52,7 +52,7 @@ export async function getEditions(): Promise<Edition[]> {
 }
 
 export async function getEdition(id: string): Promise<Edition | undefined> {
-  const response = await fetch(`/api/content/editions/${encodeURIComponent(id)}`);
+  const response = await fetch(toApiUrl(`/api/content/editions/${encodeURIComponent(id)}`));
   if (response.status === 404) return undefined;
   return readApiResponse<Edition>(response);
 }
@@ -255,7 +255,7 @@ async function adminApi<T = { ok: true }>(input: string, init?: RequestInit) {
 }
 
 async function api<T>(input: string, init?: RequestInit) {
-  const response = await fetch(input, {
+  const response = await fetch(toApiUrl(input), {
     ...init,
     headers: {
       "content-type": "application/json",
@@ -263,6 +263,18 @@ async function api<T>(input: string, init?: RequestInit) {
     },
   });
   return readApiResponse<T>(response);
+}
+
+function toApiUrl(input: string) {
+  if (typeof window !== "undefined" || /^https?:\/\//i.test(input)) {
+    return input;
+  }
+
+  const siteUrl =
+    (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "") ||
+    "https://www.agralhacultural.com.br";
+
+  return `${siteUrl}${input.startsWith("/") ? input : `/${input}`}`;
 }
 
 async function readApiResponse<T>(response: Response) {

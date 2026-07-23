@@ -55,6 +55,8 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
+type AdminPanel = "overview" | "editions" | "sponsors" | "mural";
+
 function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -79,7 +81,7 @@ function AdminPage() {
   return (
     <div className="min-h-screen flex flex-col bg-paper-grain">
       <Header />
-      <main className="mx-auto max-w-6xl px-4 py-10 w-full flex-1">
+      <main className="mx-auto max-w-7xl px-4 py-10 w-full flex-1">
         {checkingAuth ? (
           <div className="py-20 text-center text-muted-foreground">Verificando acesso...</div>
         ) : authed ? (
@@ -163,10 +165,33 @@ function Dashboard() {
   const [editions, setEditions] = useState<Edition[]>([]);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [muralArtists, setMuralArtists] = useState<MuralArtist[]>([]);
-  const [activePanel, setActivePanel] = useState<"overview" | "editions" | "sponsors" | "mural">(
-    "overview",
-  );
+  const [activePanel, setActivePanel] = useState<AdminPanel>("overview");
   const [loading, setLoading] = useState(true);
+
+  const panelMeta: Record<AdminPanel, { title: string; eyebrow: string; description: string }> = {
+    overview: {
+      title: "Visão geral",
+      eyebrow: "Painel do Editor",
+      description: "Acompanhe o acervo, os apoios culturais e o mural em um só lugar.",
+    },
+    editions: {
+      title: "Gerenciar edições",
+      eyebrow: "Acervo",
+      description: "Cadastre, edite, troque capas e reenvie PDFs das edições publicadas.",
+    },
+    sponsors: {
+      title: "Gerenciar patrocinadores",
+      eyebrow: "Apoio cultural",
+      description: "Atualize dados, imagens, links, ordem e visibilidade dos patrocinadores.",
+    },
+    mural: {
+      title: "Mural de Artistas",
+      eyebrow: "Depoimentos",
+      description: "Organize artistas, fotos, relatos, status de publicação e ordem do mural.",
+    },
+  };
+
+  const currentPanel = panelMeta[activePanel];
 
   async function load() {
     setLoading(true);
@@ -189,8 +214,8 @@ function Dashboard() {
   }, []);
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="space-y-7 rounded-2xl border border-ink/15 bg-card/85 p-4 paper-shadow sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-ink/10 bg-paper px-5 py-4">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-primary">Redação</p>
           <h1 className="text-serif text-3xl sm:text-4xl font-black text-ink">Painel do Editor</h1>
@@ -203,7 +228,24 @@ function Dashboard() {
         </button>
       </div>
 
-      {loading && <div className="text-sm text-muted-foreground">Carregando dados...</div>}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/10 bg-paper px-4 py-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-primary">
+            {currentPanel.eyebrow}
+          </p>
+          <h2 className="mt-1 text-serif text-2xl font-black text-ink">{currentPanel.title}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{currentPanel.description}</p>
+        </div>
+        <span className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-card px-3 py-2 text-xs font-semibold text-muted-foreground">
+          {loading ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Sincronizando
+            </>
+          ) : (
+            "Dados atualizados"
+          )}
+        </span>
+      </div>
 
       <div className="rounded-xl border border-primary/25 bg-primary/10 p-5 text-sm leading-7 text-ink">
         <p className="font-semibold text-primary">Servidor próprio ativo</p>
@@ -215,7 +257,7 @@ function Dashboard() {
 
       <DashboardStats editions={editions} sponsors={sponsors} muralArtists={muralArtists} />
 
-      <div className="flex flex-wrap gap-2 rounded-xl border border-ink/15 bg-card p-2 paper-shadow">
+      <div className="grid gap-2 rounded-xl border border-ink/15 bg-paper p-2 md:grid-cols-4">
         <PanelButton
           active={activePanel === "overview"}
           icon={<LayoutDashboard className="h-4 w-4" />}
@@ -279,7 +321,7 @@ function DashboardStats({
   const totalPages = editions.reduce((sum, edition) => sum + edition.pageCount, 0);
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard
         icon={<BookOpen className="h-5 w-5" />}
         label="Edições publicadas"
@@ -462,13 +504,21 @@ function StatCard({
   detail: string;
 }) {
   return (
-    <section className="rounded-xl border border-ink/15 bg-card p-5 paper-shadow">
-      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
-        {icon}
+    <section className="rounded-xl border border-ink/10 bg-card p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            {label}
+          </p>
+          <p className="mt-2 text-3xl font-black leading-none text-ink">{value}</p>
+        </div>
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          {icon}
+        </div>
       </div>
-      <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{label}</p>
-      <p className="mt-2 text-3xl font-black text-ink">{value}</p>
-      <p className="mt-1 truncate text-sm text-muted-foreground">{detail}</p>
+      <p className="mt-3 truncate border-t border-ink/10 pt-3 text-xs text-muted-foreground">
+        {detail}
+      </p>
     </section>
   );
 }
@@ -477,25 +527,44 @@ function PanelButton({
   active,
   icon,
   label,
+  detail,
   onClick,
 }: {
   active: boolean;
   icon: React.ReactNode;
   label: string;
+  detail?: string;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition sm:flex-none ${
+      className={`flex min-h-[68px] items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-semibold transition ${
         active
           ? "bg-ink text-paper paper-shadow"
-          : "text-muted-foreground hover:bg-paper hover:text-ink"
+          : "bg-card text-muted-foreground hover:bg-primary/10 hover:text-ink"
       }`}
     >
-      {icon}
-      {label}
+      <span
+        className={`grid h-9 w-9 shrink-0 place-items-center rounded-md ${
+          active ? "bg-paper/15 text-paper" : "bg-primary/10 text-primary"
+        }`}
+      >
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate">{label}</span>
+        {detail && (
+          <span
+            className={`mt-0.5 block truncate text-xs ${
+              active ? "text-paper/70" : "text-muted-foreground"
+            }`}
+          >
+            {detail}
+          </span>
+        )}
+      </span>
     </button>
   );
 }
@@ -716,6 +785,70 @@ function EditionsSection({
     }
   }
 
+  async function promptUpdateEditionPdf(edition: Edition) {
+    const Swal = await getSwal();
+    const result = await Swal.fire<File>({
+      title: "Reenviar PDF",
+      html: `
+        <div class="text-left text-sm text-[#6b6257]">
+          <p>Envie o novo PDF desta edição. O arquivo anterior será substituído no cadastro.</p>
+          <p class="mt-2 text-xs">O leitor integrado usará o novo arquivo assim que o envio terminar.</p>
+        </div>
+      `,
+      input: "file",
+      inputAttributes: {
+        accept: "application/pdf",
+        "aria-label": "Arquivo PDF",
+      },
+      confirmButtonText: "Enviar PDF",
+      cancelButtonText: "Cancelar",
+      showCancelButton: true,
+      confirmButtonColor: "#1f7a4d",
+      cancelButtonColor: "#6b6257",
+      preConfirm: (file) => {
+        if (!file) {
+          Swal.showValidationMessage("Escolha um PDF para substituir o arquivo atual.");
+          return false;
+        }
+
+        if (file.type !== "application/pdf") {
+          Swal.showValidationMessage("Envie um arquivo PDF.");
+          return false;
+        }
+
+        return file;
+      },
+    });
+
+    if (!result.isConfirmed || !result.value) return;
+
+    const oldPdfPath = edition.pdfPath;
+
+    try {
+      const file = result.value;
+      const pageCount = await getPdfPageCount(file);
+      const pdfPath = await uploadEditionPdf(edition.id, file);
+
+      await updateEdition({
+        id: edition.id,
+        pdfPath,
+        pdfOriginalName: file.name,
+        pdfSize: file.size,
+        pageCount,
+      });
+
+      if (oldPdfPath.startsWith("/uploads/") && oldPdfPath !== pdfPath) {
+        await deleteMuralArtistImage(oldPdfPath).catch(() => undefined);
+      }
+
+      await onChange();
+      await showSuccess("PDF atualizado com sucesso.");
+    } catch (error) {
+      console.error(error);
+      void showError("Não foi possível reenviar o PDF.");
+    }
+  }
+
   return (
     <section className="rounded-xl border border-ink/15 bg-card paper-shadow p-6">
       <h2 className="text-serif text-2xl font-black text-ink flex items-center gap-2">
@@ -884,8 +1017,17 @@ function EditionsSection({
                 onClick={() => void promptUpdateEditionCover(e)}
                 className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-primary hover:text-primary-foreground transition"
                 aria-label="Atualizar capa"
+                title="Atualizar capa"
               >
                 <ImageIcon className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => void promptUpdateEditionPdf(e)}
+                className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-primary hover:text-primary-foreground transition"
+                aria-label="Reenviar PDF"
+                title="Reenviar PDF"
+              >
+                <Upload className="h-4 w-4" />
               </button>
               <button
                 onClick={async () => {
@@ -1032,6 +1174,61 @@ function SponsorsSection({
     }
   }
 
+  async function promptUpdateSponsorImage(s: Sponsor) {
+    const Swal = await getSwal();
+    const result = await Swal.fire<File>({
+      title: "Trocar imagem do patrocinador",
+      html: `
+        <div class="text-left text-sm text-[#6b6257]">
+          <p>Envie o novo logo ou banner do patrocinador. O servidor otimiza e converte para WebP automaticamente.</p>
+          <p class="mt-2 text-xs">Imagem horizontal recomendada: 1200x600px.</p>
+        </div>
+      `,
+      input: "file",
+      inputAttributes: {
+        accept: "image/png,image/jpeg,image/webp",
+        "aria-label": "Imagem do patrocinador",
+      },
+      confirmButtonText: "Enviar imagem",
+      cancelButtonText: "Cancelar",
+      showCancelButton: true,
+      confirmButtonColor: "#1f7a4d",
+      cancelButtonColor: "#6b6257",
+      preConfirm: (file) => {
+        if (!file) {
+          Swal.showValidationMessage("Escolha uma imagem para o patrocinador.");
+          return false;
+        }
+
+        if (!file.type.startsWith("image/")) {
+          Swal.showValidationMessage("Envie um arquivo de imagem.");
+          return false;
+        }
+
+        return file;
+      },
+    });
+
+    if (!result.isConfirmed || !result.value) return;
+
+    const oldImagePath = s.imagePath;
+
+    try {
+      const imagePath = await uploadSponsorImage(s.id, result.value);
+      await updateSponsor({ ...s, imagePath });
+
+      if (oldImagePath.startsWith("/uploads/") && oldImagePath !== imagePath) {
+        await deleteMuralArtistImage(oldImagePath).catch(() => undefined);
+      }
+
+      await onChange();
+      await showSuccess("Imagem do patrocinador atualizada com sucesso.");
+    } catch (error) {
+      console.error(error);
+      void showError("Não foi possível atualizar a imagem do patrocinador.");
+    }
+  }
+
   return (
     <section className="rounded-xl border border-ink/15 bg-card paper-shadow p-6">
       <h2 className="text-serif text-2xl font-black text-ink flex items-center gap-2">
@@ -1140,8 +1337,17 @@ function SponsorsSection({
                 onClick={() => void promptEditSponsor(s)}
                 className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-primary hover:text-primary-foreground transition"
                 aria-label="Editar"
+                title="Editar informações"
               >
                 <Edit3 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => void promptUpdateSponsorImage(s)}
+                className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-primary hover:text-primary-foreground transition"
+                aria-label="Trocar imagem"
+                title="Trocar imagem"
+              >
+                <ImageIcon className="h-4 w-4" />
               </button>
               <button
                 onClick={async () => {
