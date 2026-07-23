@@ -214,92 +214,155 @@ function Dashboard() {
   }, []);
 
   return (
-    <div className="space-y-7 rounded-2xl border border-ink/15 bg-card/85 p-4 paper-shadow sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-ink/10 bg-paper px-5 py-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-primary">Redação</p>
-          <h1 className="text-serif text-3xl sm:text-4xl font-black text-ink">Painel do Editor</h1>
-        </div>
-        <button
-          onClick={() => void signOut()}
-          className="inline-flex items-center gap-2 rounded-full border border-ink/25 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-ink hover:bg-ink hover:text-paper transition-colors"
-        >
-          <LogOut className="h-4 w-4" /> Sair
-        </button>
+    <div className="overflow-hidden rounded-2xl border border-ink/15 bg-card paper-shadow">
+      <div className="grid min-h-[760px] lg:grid-cols-[290px_minmax(0,1fr)]">
+        <aside className="flex flex-col bg-ink text-paper">
+          <div className="border-b border-paper/15 p-6">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-paper/55">
+              Redação
+            </p>
+            <h1 className="mt-2 text-serif text-3xl font-black leading-none">A Gralha</h1>
+            <p className="mt-2 text-sm leading-6 text-paper/65">Painel administrativo do jornal.</p>
+          </div>
+
+          <nav className="grid gap-2 p-4">
+            <PanelButton
+              active={activePanel === "overview"}
+              icon={<LayoutDashboard className="h-4 w-4" />}
+              label="Visão geral"
+              detail="Resumo do site"
+              onClick={() => setActivePanel("overview")}
+            />
+            <PanelButton
+              active={activePanel === "editions"}
+              icon={<BookOpen className="h-4 w-4" />}
+              label="Edições"
+              detail="Editar, capa e PDF"
+              onClick={() => setActivePanel("editions")}
+            />
+            <PanelButton
+              active={activePanel === "sponsors"}
+              icon={<Users className="h-4 w-4" />}
+              label="Patrocinadores"
+              detail="Logos e contatos"
+              onClick={() => setActivePanel("sponsors")}
+            />
+            <PanelButton
+              active={activePanel === "mural"}
+              icon={<MessageSquareText className="h-4 w-4" />}
+              label="Mural"
+              detail="Fotos e depoimentos"
+              onClick={() => setActivePanel("mural")}
+            />
+          </nav>
+
+          <div className="mt-auto space-y-4 border-t border-paper/15 p-4">
+            <div className="rounded-xl border border-paper/15 bg-paper/10 p-4 text-sm leading-6 text-paper/75">
+              <p className="mb-1 font-semibold text-paper">Servidor próprio ativo</p>
+              <p>PostgreSQL na VPS e arquivos em public/uploads.</p>
+            </div>
+            <button
+              onClick={() => void signOut()}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-paper/25 px-4 py-3 text-xs font-semibold uppercase tracking-widest text-paper transition hover:bg-paper hover:text-ink"
+            >
+              <LogOut className="h-4 w-4" /> Sair
+            </button>
+          </div>
+        </aside>
+
+        <section className="min-w-0 bg-paper/80">
+          <div className="space-y-7 p-4 sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-ink/10 bg-card px-5 py-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-primary">Redação</p>
+                <h1 className="text-serif text-3xl sm:text-4xl font-black text-ink">
+                  Painel do Editor
+                </h1>
+              </div>
+              <button onClick={() => void signOut()} className="hidden">
+                <LogOut className="h-4 w-4" /> Sair
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/10 bg-paper px-4 py-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-primary">
+                  {currentPanel.eyebrow}
+                </p>
+                <h2 className="mt-1 text-serif text-2xl font-black text-ink">
+                  {currentPanel.title}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">{currentPanel.description}</p>
+              </div>
+              <span className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-card px-3 py-2 text-xs font-semibold text-muted-foreground">
+                {loading ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Sincronizando
+                  </>
+                ) : (
+                  "Dados atualizados"
+                )}
+              </span>
+            </div>
+
+            <div className="hidden">
+              <p className="font-semibold text-primary">Servidor próprio ativo</p>
+              <p>
+                O painel salva edições, patrocinadores e mural no PostgreSQL da VPS. PDFs e imagens
+                enviados ficam fisicamente em <strong>public/uploads</strong> no servidor.
+              </p>
+            </div>
+
+            <DashboardStats editions={editions} sponsors={sponsors} muralArtists={muralArtists} />
+
+            <div className="hidden">
+              <PanelButton
+                active={activePanel === "overview"}
+                icon={<LayoutDashboard className="h-4 w-4" />}
+                label="Visão geral"
+                onClick={() => setActivePanel("overview")}
+              />
+              <PanelButton
+                active={activePanel === "editions"}
+                icon={<BookOpen className="h-4 w-4" />}
+                label="Gerenciar edições"
+                onClick={() => setActivePanel("editions")}
+              />
+              <PanelButton
+                active={activePanel === "sponsors"}
+                icon={<Users className="h-4 w-4" />}
+                label="Gerenciar patrocinadores"
+                onClick={() => setActivePanel("sponsors")}
+              />
+              <PanelButton
+                active={activePanel === "mural"}
+                icon={<MessageSquareText className="h-4 w-4" />}
+                label="Mural de Artistas"
+                onClick={() => setActivePanel("mural")}
+              />
+            </div>
+
+            {activePanel === "overview" && (
+              <DashboardOverview
+                editions={editions}
+                sponsors={sponsors}
+                muralArtists={muralArtists}
+                onManageEditions={() => setActivePanel("editions")}
+                onManageSponsors={() => setActivePanel("sponsors")}
+                onManageMural={() => setActivePanel("mural")}
+              />
+            )}
+
+            {activePanel === "editions" && <EditionsSection editions={editions} onChange={load} />}
+
+            {activePanel === "sponsors" && <SponsorsSection sponsors={sponsors} onChange={load} />}
+
+            {activePanel === "mural" && (
+              <MuralAdminSection artists={muralArtists} onChange={load} />
+            )}
+          </div>
+        </section>
       </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/10 bg-paper px-4 py-3">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-primary">
-            {currentPanel.eyebrow}
-          </p>
-          <h2 className="mt-1 text-serif text-2xl font-black text-ink">{currentPanel.title}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{currentPanel.description}</p>
-        </div>
-        <span className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-card px-3 py-2 text-xs font-semibold text-muted-foreground">
-          {loading ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Sincronizando
-            </>
-          ) : (
-            "Dados atualizados"
-          )}
-        </span>
-      </div>
-
-      <div className="rounded-xl border border-primary/25 bg-primary/10 p-5 text-sm leading-7 text-ink">
-        <p className="font-semibold text-primary">Servidor próprio ativo</p>
-        <p>
-          O painel salva edições, patrocinadores e mural no PostgreSQL da VPS. PDFs e imagens
-          enviados ficam fisicamente em <strong>public/uploads</strong> no servidor.
-        </p>
-      </div>
-
-      <DashboardStats editions={editions} sponsors={sponsors} muralArtists={muralArtists} />
-
-      <div className="grid gap-2 rounded-xl border border-ink/15 bg-paper p-2 md:grid-cols-4">
-        <PanelButton
-          active={activePanel === "overview"}
-          icon={<LayoutDashboard className="h-4 w-4" />}
-          label="Visão geral"
-          onClick={() => setActivePanel("overview")}
-        />
-        <PanelButton
-          active={activePanel === "editions"}
-          icon={<BookOpen className="h-4 w-4" />}
-          label="Gerenciar edições"
-          onClick={() => setActivePanel("editions")}
-        />
-        <PanelButton
-          active={activePanel === "sponsors"}
-          icon={<Users className="h-4 w-4" />}
-          label="Gerenciar patrocinadores"
-          onClick={() => setActivePanel("sponsors")}
-        />
-        <PanelButton
-          active={activePanel === "mural"}
-          icon={<MessageSquareText className="h-4 w-4" />}
-          label="Mural de Artistas"
-          onClick={() => setActivePanel("mural")}
-        />
-      </div>
-
-      {activePanel === "overview" && (
-        <DashboardOverview
-          editions={editions}
-          sponsors={sponsors}
-          muralArtists={muralArtists}
-          onManageEditions={() => setActivePanel("editions")}
-          onManageSponsors={() => setActivePanel("sponsors")}
-          onManageMural={() => setActivePanel("mural")}
-        />
-      )}
-
-      {activePanel === "editions" && <EditionsSection editions={editions} onChange={load} />}
-
-      {activePanel === "sponsors" && <SponsorsSection sponsors={sponsors} onChange={load} />}
-
-      {activePanel === "mural" && <MuralAdminSection artists={muralArtists} onChange={load} />}
     </div>
   );
 }
@@ -542,13 +605,13 @@ function PanelButton({
       onClick={onClick}
       className={`flex min-h-[68px] items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-semibold transition ${
         active
-          ? "bg-ink text-paper paper-shadow"
-          : "bg-card text-muted-foreground hover:bg-primary/10 hover:text-ink"
+          ? "bg-paper text-ink paper-shadow"
+          : "bg-transparent text-paper/70 hover:bg-paper/10 hover:text-paper"
       }`}
     >
       <span
         className={`grid h-9 w-9 shrink-0 place-items-center rounded-md ${
-          active ? "bg-paper/15 text-paper" : "bg-primary/10 text-primary"
+          active ? "bg-primary/10 text-primary" : "bg-paper/10 text-paper"
         }`}
       >
         {icon}
@@ -557,9 +620,7 @@ function PanelButton({
         <span className="block truncate">{label}</span>
         {detail && (
           <span
-            className={`mt-0.5 block truncate text-xs ${
-              active ? "text-paper/70" : "text-muted-foreground"
-            }`}
+            className={`mt-0.5 block truncate text-xs ${active ? "text-ink/60" : "text-paper/50"}`}
           >
             {detail}
           </span>
